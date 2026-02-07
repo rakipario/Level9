@@ -19,9 +19,11 @@ export default function VerifyEmailPage() {
     }
   }, [token]);
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
   const verifyEmail = async () => {
     try {
-      const response = await fetch(`/api/auth/verify-email?token=${token}`);
+      const response = await fetch(`${API_URL}/auth/verify-email?token=${token}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -40,12 +42,12 @@ export default function VerifyEmailPage() {
   const resendEmail = async () => {
     setResendLoading(true);
     try {
-      const response = await fetch('/api/auth/resend-verification', {
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
-      
+
       if (response.ok) {
         setResendSuccess(true);
       }
@@ -59,7 +61,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-      
+
       <header className="p-6 relative">
         <div className="container-wide flex items-center justify-between">
           <Link to="/" className="text-[16px] font-medium tracking-tight">
@@ -116,7 +118,7 @@ export default function VerifyEmailPage() {
               <p className="text-[15px] text-[var(--text-secondary)] mb-8">
                 {message}
               </p>
-              
+
               {!resendSuccess ? (
                 <button
                   onClick={resendEmail}
@@ -137,7 +139,7 @@ export default function VerifyEmailPage() {
                   Verification email resent!
                 </div>
               )}
-              
+
               <Link to="/signup" className="link text-[14px]">
                 Back to sign up
               </Link>

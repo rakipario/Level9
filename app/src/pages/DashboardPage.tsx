@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Plus, MessageSquare, Settings, BarChart3, LogOut, 
+import {
+  Plus, MessageSquare, Settings, BarChart3, LogOut,
   ChevronRight, Trash2, Copy,
   Send, Paperclip, Bot, User, Loader2,
   Slack, Database, Mail, FileSpreadsheet, Globe, Webhook,
@@ -55,6 +55,8 @@ const integrationIcons: Record<string, any> = {
   default: Globe
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'agents' | 'chat' | 'integrations' | 'profile'>('agents');
@@ -85,7 +87,7 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch(`${API_URL}/user/profile`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -99,7 +101,7 @@ export default function DashboardPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents', {
+      const response = await fetch(`${API_URL}/agents`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -113,7 +115,7 @@ export default function DashboardPage() {
 
   const fetchIntegrations = async () => {
     try {
-      const response = await fetch('/api/integrations', {
+      const response = await fetch(`${API_URL}/integrations`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -127,7 +129,7 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/user/stats', {
+      const response = await fetch(`${API_URL}/user/stats`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -159,7 +161,7 @@ export default function DashboardPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch(`${API_URL}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +193,7 @@ export default function DashboardPage() {
 
   const duplicateAgent = async (agentId: string) => {
     try {
-      const response = await fetch(`/api/agents/${agentId}/duplicate`, {
+      const response = await fetch(`${API_URL}/agents/${agentId}/duplicate`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -205,9 +207,9 @@ export default function DashboardPage() {
 
   const deleteAgent = async (agentId: string) => {
     if (!confirm('Are you sure you want to delete this agent?')) return;
-    
+
     try {
-      const response = await fetch(`/api/agents/${agentId}`, {
+      const response = await fetch(`${API_URL}/agents/${agentId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -228,7 +230,7 @@ export default function DashboardPage() {
             Manage and deploy your AI agents
           </p>
         </div>
-        <button 
+        <button
           onClick={() => navigate('/create-agent')}
           className="btn-primary flex items-center gap-2"
         >
@@ -246,7 +248,7 @@ export default function DashboardPage() {
           <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Create your first AI agent to get started
           </p>
-          <button 
+          <button
             onClick={() => navigate('/create-agent')}
             className="btn-primary"
           >
@@ -295,9 +297,8 @@ export default function DashboardPage() {
                       <MessageSquare className="h-3 w-3" />
                       {agent.conversation_count}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full ${
-                      agent.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full ${agent.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                      }`}>
                       {agent.status}
                     </span>
                   </div>
@@ -341,20 +342,18 @@ export default function DashboardPage() {
             key={message.id}
             className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-              message.role === 'user' ? 'bg-[var(--bg-subtle)]' : 'bg-[var(--text)]'
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user' ? 'bg-[var(--bg-subtle)]' : 'bg-[var(--text)]'
+              }`}>
               {message.role === 'user' ? (
                 <User className="h-4 w-4 text-[var(--text-secondary)]" />
               ) : (
                 <Bot className="h-4 w-4 text-white" />
               )}
             </div>
-            <div className={`max-w-[70%] rounded-[20px] px-4 py-3 ${
-              message.role === 'user' 
-                ? 'bg-[var(--text)] text-white' 
+            <div className={`max-w-[70%] rounded-[20px] px-4 py-3 ${message.role === 'user'
+                ? 'bg-[var(--text)] text-white'
                 : 'bg-[var(--bg-subtle)] text-[var(--text)]'
-            }`}>
+              }`}>
               <p className="text-[14px] whitespace-pre-wrap">{message.content}</p>
               {message.components && message.components.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -444,11 +443,10 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center">
                   <Icon className="h-6 w-6 text-[var(--accent)]" />
                 </div>
-                <span className={`px-2 py-1 rounded-full text-[11px] font-medium ${
-                  integration.status === 'connected' 
-                    ? 'bg-green-100 text-green-600' 
+                <span className={`px-2 py-1 rounded-full text-[11px] font-medium ${integration.status === 'connected'
+                    ? 'bg-green-100 text-green-600'
                     : 'bg-gray-100 text-gray-600'
-                }`}>
+                  }`}>
                   {integration.status}
                 </span>
               </div>
@@ -555,44 +553,40 @@ export default function DashboardPage() {
         <nav className="px-4 space-y-1">
           <button
             onClick={() => setActiveTab('agents')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${
-              activeTab === 'agents'
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${activeTab === 'agents'
                 ? 'bg-[var(--text)] text-white'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-            }`}
+              }`}
           >
             <Bot className="h-4 w-4" />
             Agents
           </button>
           <button
             onClick={() => setActiveTab('chat')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${
-              activeTab === 'chat'
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${activeTab === 'chat'
                 ? 'bg-[var(--text)] text-white'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-            }`}
+              }`}
           >
             <MessageSquare className="h-4 w-4" />
             Chat
           </button>
           <button
             onClick={() => setActiveTab('integrations')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${
-              activeTab === 'integrations'
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${activeTab === 'integrations'
                 ? 'bg-[var(--text)] text-white'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-            }`}
+              }`}
           >
             <Settings className="h-4 w-4" />
             Integrations
           </button>
           <button
             onClick={() => setActiveTab('profile')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${
-              activeTab === 'profile'
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-[14px] transition-all duration-200 ${activeTab === 'profile'
                 ? 'bg-[var(--text)] text-white'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-            }`}
+              }`}
           >
             <User className="h-4 w-4" />
             Profile

@@ -71,8 +71,10 @@ export default function PlanSelectionPage() {
     setSelectedPlan(planId);
     setLoading(true);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
     try {
-      const response = await fetch('/api/user/select-plan', {
+      const response = await fetch(`${API_URL}/user/select-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +99,7 @@ export default function PlanSelectionPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-      
+
       <header className="p-6 relative">
         <div className="container-wide flex items-center justify-between">
           <Link to="/" className="text-[16px] font-medium tracking-tight">
@@ -125,15 +127,14 @@ export default function PlanSelectionPage() {
             {plans.map((plan) => {
               const Icon = plan.icon;
               const isSelected = selectedPlan === plan.id;
-              
+
               return (
                 <div
                   key={plan.id}
-                  className={`relative rounded-[32px] p-8 transition-all duration-300 ${
-                    plan.highlighted
+                  className={`relative rounded-[32px] p-8 transition-all duration-300 ${plan.highlighted
                       ? 'bg-[var(--text)] text-white scale-[1.02] shadow-xl'
                       : 'bg-white border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-lg'
-                  } ${isSelected && loading ? 'opacity-70' : ''}`}
+                    } ${isSelected && loading ? 'opacity-70' : ''}`}
                 >
                   {plan.highlighted && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -144,9 +145,8 @@ export default function PlanSelectionPage() {
                   )}
 
                   <div className="mb-6">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-                      plan.highlighted ? 'bg-white/10' : 'bg-[var(--bg-subtle)]'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${plan.highlighted ? 'bg-white/10' : 'bg-[var(--bg-subtle)]'
+                      }`}>
                       <Icon className={`h-6 w-6 ${plan.highlighted ? 'text-white' : 'text-[var(--accent)]'}`} />
                     </div>
                     <h3 className="text-[20px] font-medium mb-1">{plan.name}</h3>
@@ -169,9 +169,8 @@ export default function PlanSelectionPage() {
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3 text-[14px]">
-                        <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                          plan.highlighted ? 'text-[var(--accent)]' : 'text-green-500'
-                        }`} />
+                        <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.highlighted ? 'text-[var(--accent)]' : 'text-green-500'
+                          }`} />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -180,11 +179,10 @@ export default function PlanSelectionPage() {
                   <button
                     onClick={() => handleSelectPlan(plan.id)}
                     disabled={loading && isSelected}
-                    className={`w-full py-4 rounded-full text-[14px] font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                      plan.highlighted
+                    className={`w-full py-4 rounded-full text-[14px] font-medium transition-all duration-200 flex items-center justify-center gap-2 ${plan.highlighted
                         ? 'bg-white text-[var(--text)] hover:bg-[var(--bg-subtle)]'
                         : 'bg-[var(--text)] text-white hover:bg-[var(--text-secondary)]'
-                    } disabled:opacity-50`}
+                      } disabled:opacity-50`}
                   >
                     {loading && isSelected ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

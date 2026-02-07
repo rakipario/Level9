@@ -16,8 +16,10 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -44,7 +46,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-      
+
       <header className="p-6 relative">
         <div className="container-wide flex items-center justify-between">
           <Link to="/" className="text-[16px] font-medium tracking-tight">
@@ -100,11 +102,11 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between text-[14px]">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded-full border-[var(--border)] w-4 h-4 accent-[var(--accent)]" 
+                  className="rounded-full border-[var(--border)] w-4 h-4 accent-[var(--accent)]"
                 />
                 <span className="text-[var(--text-secondary)]">Remember me</span>
               </label>
@@ -117,8 +119,8 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="btn-primary w-full justify-center py-4 disabled:opacity-50"
             >

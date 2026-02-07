@@ -35,8 +35,10 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password })
@@ -63,7 +65,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-        
+
         <header className="p-6 relative">
           <div className="container-wide flex items-center justify-between">
             <Link to="/" className="text-[16px] font-medium tracking-tight">
@@ -96,7 +98,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-        
+
         <header className="p-6 relative">
           <div className="container-wide flex items-center justify-between">
             <Link to="/" className="text-[16px] font-medium tracking-tight">
@@ -128,7 +130,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-subtle)] to-white pointer-events-none" />
-      
+
       <header className="p-6 relative">
         <div className="container-wide flex items-center justify-between">
           <Link to="/" className="text-[16px] font-medium tracking-tight">
