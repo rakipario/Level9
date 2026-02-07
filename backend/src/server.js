@@ -32,6 +32,9 @@ const widgetRoutes = require('./routes/widget');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configure for Railway/Heroku proxies
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
@@ -56,6 +59,15 @@ app.use(morgan('dev'));
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root route for basic health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'Relay AI Backend',
+    version: '1.0.0'
+  });
 });
 
 // Routes
