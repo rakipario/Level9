@@ -1,21 +1,15 @@
-import React, { useState, useEffect, useRef, type ReactNode } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
-  Bot, User, Loader2, Menu, Sparkles, Trash2, MoreHorizontal,
+  Bot, User, Loader2, Menu, Sparkles, Trash2,
   FileText, X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-interface Agent {
-  id: string;
-  name: string;
-  description: string;
-}
 
 interface Conversation {
   id: string;
