@@ -28,6 +28,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  conversation_id?: string;
   createdAt: string;
 }
 
@@ -56,6 +57,30 @@ export default function DashboardPage() {
     fetchAgents();
     fetchConversations();
   }, []);
+
+  const fetchAgents = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const response = await fetch(`${API_URL}/agents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setAgents(data);
+          if (data.length > 0) setSelectedAgentId(data[0].id);
+        } else {
+          console.error('Agents data is not an array:', data);
+          setAgents([]);
+        }
+      } else {
+        console.error('Failed to fetch agents:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  };
 
   const fetchConversations = async () => {
     try {
