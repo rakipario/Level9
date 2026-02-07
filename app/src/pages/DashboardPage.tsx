@@ -6,7 +6,7 @@ import {
   Send, Paperclip, Bot, User, Loader2,
   Slack, Database, Mail, FileSpreadsheet, Globe, Webhook,
   TrendingUp, Headphones, Megaphone, Search as SearchIcon,
-  Menu, X
+  Menu
 } from 'lucide-react';
 
 interface Agent {
@@ -400,8 +400,8 @@ export default function DashboardPage() {
 
             <div className={`max-w-[80%] space-y-2 ${message.role === 'user' ? 'items-end flex flex-col' : ''}`}>
               <div className={`px-5 py-3.5 rounded-2xl shadow-sm ${message.role === 'user'
-                  ? 'bg-[var(--text)] text-white rounded-tr-sm'
-                  : 'bg-white border border-[var(--border)] text-[var(--text)] rounded-tl-sm'
+                ? 'bg-[var(--text)] text-white rounded-tr-sm'
+                : 'bg-white border border-[var(--border)] text-[var(--text)] rounded-tl-sm'
                 }`}>
                 <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
               </div>
@@ -480,8 +480,8 @@ export default function DashboardPage() {
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || loading}
               className={`p-3 rounded-xl transition-all duration-200 ${inputMessage.trim() && !loading
-                  ? 'bg-[var(--text)] text-white shadow-md hover:bg-black/90'
-                  : 'bg-[var(--border)] text-[var(--text-tertiary)] cursor-not-allowed'
+                ? 'bg-[var(--text)] text-white shadow-md hover:bg-black/90'
+                : 'bg-[var(--border)] text-[var(--text-tertiary)] cursor-not-allowed'
                 }`}
             >
               <Send className="h-5 w-5" />

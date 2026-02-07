@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, ArrowLeft, Check, ChevronRight, BarChart3, TrendingUp, Headphones, Megaphone, Settings, Search, Sparkles, User } from 'lucide-react';
+import { Bot, ArrowLeft, ChevronRight, BarChart3, TrendingUp, Headphones, Megaphone, Settings, Search, Sparkles } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -102,8 +102,8 @@ export default function CreateAgentPage() {
                                             setStep(2);
                                         }}
                                         className={`flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200 ${formData.category === cat.id
-                                                ? 'border-[var(--accent)] bg-[var(--accent-light)]/10 ring-1 ring-[var(--accent)]'
-                                                : 'border-transparent bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)]/80 hover:border-[var(--border)]'
+                                            ? 'border-[var(--accent)] bg-[var(--accent-light)]/10 ring-1 ring-[var(--accent)]'
+                                            : 'border-transparent bg-[var(--bg-subtle)] hover:bg-[var(--bg-subtle)]/80 hover:border-[var(--border)]'
                                             }`}
                                     >
                                         <div className={`p-2 rounded-lg ${formData.category === cat.id ? 'bg-[var(--accent)] text-white' : 'bg-white text-[var(--text-secondary)]'
