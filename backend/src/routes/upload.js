@@ -12,7 +12,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
-const { authenticate } = require('./auth');
+const { authenticateToken } = require('../utils/auth');
 
 const router = express.Router();
 
@@ -66,7 +66,7 @@ const upload = multer({
 /**
  * Upload single file
  */
-router.post('/upload', authenticate, upload.single('file'), async (req, res) => {
+router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -104,7 +104,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req, res) => 
 /**
  * Upload multiple files
  */
-router.post('/upload-multiple', authenticate, upload.array('files', 10), async (req, res) => {
+router.post('/upload-multiple', authenticateToken, upload.array('files', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded' });
@@ -150,7 +150,7 @@ router.post('/upload-multiple', authenticate, upload.array('files', 10), async (
 /**
  * List user's files
  */
-router.get('/files', authenticate, async (req, res) => {
+router.get('/files', authenticateToken, async (req, res) => {
     try {
         const userId = req.user?.id || 'anonymous';
         const userDir = path.join(UPLOADS_DIR, userId);
@@ -186,7 +186,7 @@ router.get('/files', authenticate, async (req, res) => {
 /**
  * Delete a file
  */
-router.delete('/files/:fileId', authenticate, async (req, res) => {
+router.delete('/files/:fileId', authenticateToken, async (req, res) => {
     try {
         const userId = req.user?.id || 'anonymous';
         const filePath = path.join(UPLOADS_DIR, userId, req.params.fileId);
@@ -201,7 +201,7 @@ router.delete('/files/:fileId', authenticate, async (req, res) => {
 /**
  * Transcribe audio file
  */
-router.post('/transcribe/:fileId', authenticate, async (req, res) => {
+router.post('/transcribe/:fileId', authenticateToken, async (req, res) => {
     try {
         const { fileId } = req.params;
         const { language } = req.body;
