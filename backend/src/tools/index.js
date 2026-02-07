@@ -88,6 +88,7 @@ const TOOL_REGISTRY = {
                     properties: {
                         data: {
                             type: 'array',
+                            items: { type: 'object', additionalProperties: true },
                             description: 'Array of data objects to analyze'
                         },
                         analysis_type: {

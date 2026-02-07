@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   ArrowRight, Menu, X,
   Check, Play,
-  MessageCircle, BarChart3, FileText, 
+  MessageCircle, BarChart3, FileText,
   Calculator, Search,
   TrendingUp, Clock, Database, Mail,
   Calendar, Sparkles, Mic,
@@ -13,7 +13,7 @@ import {
 
 const suggestions = [
   'Analyze my sales data',
-  'Summarize weekly reports', 
+  'Summarize weekly reports',
   'Automate email follow-ups',
   'Calculate quarterly forecasts',
 ];
@@ -89,32 +89,32 @@ const agentTypes = [
 ];
 
 const testimonials = [
-  { 
-    name: 'Sarah Chen', 
-    role: 'CEO', 
-    company: 'Notion', 
+  {
+    name: 'Sarah Chen',
+    role: 'CEO',
+    company: 'Notion',
     quote: 'Relay transformed our customer support. Response time went from hours to seconds.',
     metric: '89%',
     metricLabel: 'faster responses',
-    avatar: 'SC' 
+    avatar: 'SC'
   },
-  { 
-    name: 'Marcus Johnson', 
-    role: 'Head of Sales', 
-    company: 'Stripe', 
+  {
+    name: 'Marcus Johnson',
+    role: 'Head of Sales',
+    company: 'Stripe',
     quote: 'Our sales team focuses on closing deals while Relay qualifies leads automatically.',
     metric: '3x',
     metricLabel: 'more qualified leads',
-    avatar: 'MJ' 
+    avatar: 'MJ'
   },
-  { 
-    name: 'Emily Rodriguez', 
-    role: 'Founder', 
-    company: 'Lumen', 
+  {
+    name: 'Emily Rodriguez',
+    role: 'Founder',
+    company: 'Lumen',
     quote: 'As a solo founder, Relay is like having a team of assistants working 24/7.',
     metric: '40hrs',
     metricLabel: 'saved weekly',
-    avatar: 'ER' 
+    avatar: 'ER'
   },
 ];
 
@@ -124,16 +124,16 @@ const StockChart = ({ animated }: { animated: boolean }) => {
   const width = 280;
   const height = 80;
   const padding = 10;
-  
+
   const maxVal = Math.max(...points);
   const minVal = Math.min(...points);
-  
+
   const getX = (i: number) => padding + (i / (points.length - 1)) * (width - padding * 2);
   const getY = (val: number) => height - padding - ((val - minVal) / (maxVal - minVal)) * (height - padding * 2);
-  
+
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(p)}`).join(' ');
   const areaD = `${pathD} L ${getX(points.length - 1)} ${height} L ${getX(0)} ${height} Z`;
-  
+
   return (
     <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
       <defs>
@@ -142,13 +142,13 @@ const StockChart = ({ animated }: { animated: boolean }) => {
           <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
         </linearGradient>
       </defs>
-      
+
       <path d={areaD} fill="url(#chartGradient)" />
-      
-      <path 
-        d={pathD} 
-        fill="none" 
-        stroke="var(--accent)" 
+
+      <path
+        d={pathD}
+        fill="none"
+        stroke="var(--accent)"
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -158,9 +158,9 @@ const StockChart = ({ animated }: { animated: boolean }) => {
           transition: 'stroke-dashoffset 0.8s ease-out'
         }}
       />
-      
+
       <circle cx={getX(points.length - 1)} cy={getY(points[points.length - 1])} r="5" fill="var(--accent)" />
-      
+
       <g transform={`translate(${getX(points.length - 1) + 8}, ${getY(points[points.length - 1]) - 8})`}>
         <path d="M0 8 L8 0 L16 8" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M8 0 L8 16" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
@@ -173,10 +173,10 @@ const StockChart = ({ animated }: { animated: boolean }) => {
 const HeroDemo = () => {
   const [step, setStep] = useState(0);
   const [finished, setFinished] = useState(false);
-  
+
   useEffect(() => {
     if (finished) return;
-    
+
     const interval = setInterval(() => {
       setStep((s) => {
         if (s >= 4) {
@@ -187,7 +187,7 @@ const HeroDemo = () => {
         return s + 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [finished]);
 
@@ -206,7 +206,7 @@ const HeroDemo = () => {
           <span className="text-[13px] text-[var(--text-tertiary)]">Live</span>
         </div>
       </div>
-      
+
       <div className="flex-1 p-5 space-y-4 overflow-hidden">
         {/* Query input - always visible */}
         <div className="animate-in slide-in-from-top-2">
@@ -235,7 +235,7 @@ const HeroDemo = () => {
                 <TrendingUp className="h-3 w-3" /> +23%
               </span>
             </div>
-            
+
             <div className="bg-white rounded-xl p-3 border border-[var(--border)]">
               <StockChart animated={step >= 3} />
             </div>
@@ -286,7 +286,7 @@ const HeroDemo = () => {
 // Animated demo components for agent types
 const DataAnalysisDemo = () => {
   const [step, setStep] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => (s + 1) % 5);
@@ -341,7 +341,7 @@ const DataAnalysisDemo = () => {
             <div className="flex items-end gap-1 h-16 mb-3">
               {[65, 82, 78, 95, 88].map((v, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center">
-                  <div 
+                  <div
                     className="w-full bg-[var(--accent)] rounded-t transition-all duration-500"
                     style={{ height: `${v}%`, transitionDelay: `${i * 100}ms` }}
                   />
@@ -360,7 +360,7 @@ const DataAnalysisDemo = () => {
 
 const DocumentDemo = () => {
   const [step, setStep] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => (s + 1) % 5);
@@ -430,7 +430,7 @@ const DocumentDemo = () => {
 
 const WorkflowDemo = () => {
   const [step, setStep] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => (s + 1) % 6);
@@ -467,22 +467,20 @@ const WorkflowDemo = () => {
           <div className="space-y-3">
             {steps.map((s) => (
               <div key={s.name} className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-500 ${
-                  s.status === 'complete' ? 'bg-[var(--accent-light)] text-[var(--accent)]' :
-                  s.status === 'running' ? 'bg-[var(--accent-light)] text-[var(--accent)] animate-pulse' :
-                  'bg-[var(--bg-subtle)] text-[var(--text-tertiary)]'
-                }`}>
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-500 ${s.status === 'complete' ? 'bg-[var(--accent-light)] text-[var(--accent)]' :
+                    s.status === 'running' ? 'bg-[var(--accent-light)] text-[var(--accent)] animate-pulse' :
+                      'bg-[var(--bg-subtle)] text-[var(--text-tertiary)]'
+                  }`}>
                   {s.status === 'complete' ? (
                     <CheckCircle2 className="h-4 w-4" />
                   ) : (
                     <s.icon className="h-4 w-4" />
                   )}
                 </div>
-                <span className={`text-[12px] transition-all duration-500 ${
-                  s.status === 'complete' ? 'text-[var(--text)]' :
-                  s.status === 'running' ? 'text-[var(--accent)]' :
-                  'text-[var(--text-tertiary)]'
-                }`}>{s.name}</span>
+                <span className={`text-[12px] transition-all duration-500 ${s.status === 'complete' ? 'text-[var(--text)]' :
+                    s.status === 'running' ? 'text-[var(--accent)]' :
+                      'text-[var(--text-tertiary)]'
+                  }`}>{s.name}</span>
                 {s.status === 'running' && (
                   <div className="ml-auto flex gap-0.5">
                     <span className="h-1 w-1 rounded-full bg-[var(--accent)] animate-bounce" />
@@ -511,7 +509,7 @@ const WorkflowDemo = () => {
 
 const FinanceDemo = () => {
   const [step, setStep] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => (s + 1) % 4);
@@ -571,7 +569,7 @@ const FinanceDemo = () => {
 
 const ResearchDemo = () => {
   const [step, setStep] = useState(0);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => (s + 1) % 5);
@@ -591,9 +589,8 @@ const ResearchDemo = () => {
           </div>
           <div className="flex flex-wrap gap-1.5">
             {sources.map((source, i) => (
-              <span key={source} className={`text-[10px] px-2 py-1 rounded-full transition-all duration-500 ${
-                step >= i ? 'bg-[var(--accent-light)] text-[var(--accent)]' : 'bg-[var(--bg-subtle)] text-[var(--text-tertiary)]'
-              }`}>
+              <span key={source} className={`text-[10px] px-2 py-1 rounded-full transition-all duration-500 ${step >= i ? 'bg-[var(--accent-light)] text-[var(--accent)]' : 'bg-[var(--bg-subtle)] text-[var(--text-tertiary)]'
+                }`}>
                 {source}
               </span>
             ))}
@@ -635,9 +632,9 @@ const ResearchDemo = () => {
 };
 
 const SupportDemo = () => {
-  const [messages, setMessages] = useState<{type: string; text: string; action?: string}[]>([]);
+  const [messages, setMessages] = useState<{ type: string; text: string; action?: string }[]>([]);
   const [typing, setTyping] = useState(false);
-  
+
   const fullConversation = [
     { type: 'user', text: 'My order #12345 hasn\'t arrived yet' },
     { type: 'agent', text: 'Let me check that for you. I see it was delayed in Memphis hub.', action: 'Tracking pulled' },
@@ -668,9 +665,9 @@ const SupportDemo = () => {
         }, 2000);
       }
     };
-    
+
     runConversation();
-    return () => {};
+    return () => { };
   }, []);
 
   return (
@@ -761,11 +758,10 @@ const ScrollReveal = ({ children, className = '', delay = 0 }: { children: React
   }, []);
 
   return (
-    <div 
+    <div
       ref={ref}
-      className={`transition-all duration-700 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-      } ${className}`}
+      className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -777,6 +773,12 @@ export default function HomePage() {
   const [input, setInput] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeAgent, setActiveAgent] = useState(0);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem('token'));
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -795,8 +797,16 @@ export default function HomePage() {
               <a href="#how-it-works" className="px-4 py-2 text-[15px] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors">How it works</a>
               <a href="#pricing" className="px-4 py-2 text-[15px] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors">Pricing</a>
               <div className="w-px h-5 bg-[var(--border)] mx-2" />
-              <Link to="/login" className="px-4 py-2 text-[15px] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors">Log in</Link>
-              <Link to="/signup" className="px-4 py-2 text-[15px] font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors">Get started</Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard" className="px-4 py-2 text-[15px] font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors">
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="px-4 py-2 text-[15px] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors">Log in</Link>
+                  <Link to="/signup" className="px-4 py-2 text-[15px] font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors">Get started</Link>
+                </>
+              )}
             </div>
 
             <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2">
@@ -824,7 +834,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="min-h-screen pt-16 relative overflow-hidden bg-white">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[var(--accent)]/[0.03] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/4" />
-        
+
         <div className="container-site relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center min-h-[calc(100vh-4rem)] py-12 lg:py-20">
             {/* Left: Content */}
@@ -927,11 +937,10 @@ export default function HomePage() {
                 <button
                   key={agent.id}
                   onClick={() => setActiveAgent(i)}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-medium transition-all ${
-                    i === activeAgent 
-                      ? 'bg-[var(--text)] text-white shadow-lg' 
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-medium transition-all ${i === activeAgent
+                      ? 'bg-[var(--text)] text-white shadow-lg'
                       : 'bg-white border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--text)]/30 hover:text-[var(--text)]'
-                  }`}
+                    }`}
                 >
                   <agent.icon className="h-4 w-4" />
                   {agent.category}
@@ -953,7 +962,7 @@ export default function HomePage() {
                     <p className="text-[16px] text-[var(--text-secondary)] mb-8 leading-relaxed">
                       {agentTypes[activeAgent].description}
                     </p>
-                    
+
                     <div className="flex flex-wrap gap-2 mb-10">
                       {agentTypes[activeAgent].capabilities.map((cap) => (
                         <span key={cap} className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-4 py-2 text-[13px] text-[var(--text-secondary)]">
@@ -962,7 +971,7 @@ export default function HomePage() {
                         </span>
                       ))}
                     </div>
-                    
+
                     <div className="inline-flex items-center gap-6 p-5 bg-[var(--bg-subtle)] rounded-2xl">
                       <div>
                         <p className="text-4xl font-semibold text-[var(--text)]">{agentTypes[activeAgent].metric}</p>
@@ -970,7 +979,7 @@ export default function HomePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Right: Live demo */}
                   <div className="bg-[var(--bg-subtle)] p-8 lg:p-12 border-t lg:border-t-0 lg:border-l border-[var(--border)]">
                     <div className="h-[320px]">
@@ -1003,12 +1012,12 @@ export default function HomePage() {
             <div className="relative">
               {/* Vertical connecting line */}
               <div className="absolute left-[27px] top-14 bottom-14 w-0.5 bg-[var(--border)]" />
-              
+
               <div className="space-y-12">
                 {[
-                  { 
-                    num: '1', 
-                    title: 'Describe what you need', 
+                  {
+                    num: '1',
+                    title: 'Describe what you need',
                     desc: 'Tell us what you want in plain English. Our AI understands context and requirements.',
                     icon: MessageCircle,
                     visual: (
@@ -1020,9 +1029,9 @@ export default function HomePage() {
                       </div>
                     )
                   },
-                  { 
-                    num: '2', 
-                    title: 'Connect your tools', 
+                  {
+                    num: '2',
+                    title: 'Connect your tools',
                     desc: 'Link your database, CRM, or any app with one-click integrations. We handle the technical setup.',
                     icon: Layers,
                     visual: (
@@ -1035,9 +1044,9 @@ export default function HomePage() {
                       </div>
                     )
                   },
-                  { 
-                    num: '3', 
-                    title: 'Deploy in seconds', 
+                  {
+                    num: '3',
+                    title: 'Deploy in seconds',
                     desc: 'Your agent goes live instantly. Track performance, review outputs, and refine as needed.',
                     icon: Send,
                     visual: (
@@ -1061,7 +1070,7 @@ export default function HomePage() {
                           {step.num}
                         </div>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="flex-1 pt-2">
                         <h3 className="text-xl font-medium text-[var(--text)] mb-2">{step.title}</h3>
@@ -1096,14 +1105,14 @@ export default function HomePage() {
               <ScrollReveal key={t.name} delay={i * 100}>
                 <div className="group bg-white rounded-[28px] p-8 border border-[var(--border)] hover:shadow-xl hover:shadow-black/5 transition-all duration-300 h-full flex flex-col">
                   <p className="text-[18px] text-[var(--text)] mb-8 leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
-                  
+
                   <div className="flex items-center gap-3 mb-6 p-4 bg-[var(--bg-subtle)] rounded-2xl">
                     <div className="h-12 w-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-[16px] font-medium">
                       {t.metric}
                     </div>
                     <p className="text-[14px] text-[var(--text-secondary)]">{t.metricLabel}</p>
                   </div>
-                  
+
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center text-[14px] font-medium text-[var(--text)]">
                       {t.avatar}
@@ -1177,7 +1186,7 @@ export default function HomePage() {
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-[var(--accent)]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-              
+
               <div className="relative p-12 lg:p-16">
                 <div className="flex flex-col lg:flex-row items-center gap-10">
                   {/* Left: Visual */}
@@ -1186,7 +1195,7 @@ export default function HomePage() {
                       <Bot className="h-12 w-12 text-white" />
                     </div>
                   </div>
-                  
+
                   {/* Right: Content */}
                   <div className="flex-1 text-center lg:text-left">
                     <h2 className="text-3xl md:text-4xl font-medium text-[var(--text)] mb-3 tracking-tight">
@@ -1225,7 +1234,7 @@ export default function HomePage() {
                 Build AI agents that work for you. Automate tasks, analyze data, and scale your operations.
               </p>
             </div>
-            
+
             <div>
               <p className="text-[14px] font-medium text-white mb-4">Product</p>
               <ul className="space-y-3">
@@ -1235,7 +1244,7 @@ export default function HomePage() {
                 <li><a href="#" className="text-[15px] text-white/50 hover:text-white transition-colors">Changelog</a></li>
               </ul>
             </div>
-            
+
             <div>
               <p className="text-[14px] font-medium text-white mb-4">Company</p>
               <ul className="space-y-3">
@@ -1246,7 +1255,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-[14px] text-white/40">© 2026 Relay. All rights reserved.</p>
             <div className="flex items-center gap-6">
