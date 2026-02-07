@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  MessageSquare, LogOut,
+  LogOut,
   Plus, Send, Paperclip, Bot, User, Loader2,
   Menu, Sparkles
 } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || loading) return;
 
@@ -269,7 +269,7 @@ export default function DashboardPage() {
               <input
                 type="text"
                 value={inputValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
                 placeholder="Message..."
                 className="flex-1 bg-transparent border-none outline-none text-[15px] placeholder:text-gray-400 text-gray-900"
               />
