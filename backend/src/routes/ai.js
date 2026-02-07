@@ -382,4 +382,33 @@ router.get('/conversations', authenticate, async (req, res) => {
   }
 });
 
+// Delete a conversation
+router.delete('/conversations/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    // First verify the conversation belongs to the user
+    const convResult = await query(
+      'SELECT * FROM conversations WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+
+    if (convResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Delete messages first (foreign key constraint)
+    await query('DELETE FROM messages WHERE conversation_id = $1', [id]);
+    
+    // Delete conversation
+    await query('DELETE FROM conversations WHERE id = $1', [id]);
+
+    res.json({ success: true, message: 'Conversation deleted' });
+  } catch (error) {
+    console.error('Delete conversation error:', error);
+    res.status(500).json({ error: 'Failed to delete conversation' });
+  }
+});
+
 module.exports = router;
