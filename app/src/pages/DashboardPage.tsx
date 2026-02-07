@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, type ReactNode } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
-  Bot, User, Loader2, Menu, Sparkles, ChevronDown, ChevronUp,
+  Bot, User, Loader2, Menu, Sparkles, ChevronDown,
   Trash2, MoreHorizontal, FileText, X, Command, Search,
-  Zap, CheckCircle2, AlertCircle, Upload
+  Zap, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -109,8 +109,8 @@ function SimpleFormattedContent({ content }: { content: string }) {
     const lines = text.split('\n');
     let inList = false;
     let listType: 'ul' | 'ol' | null = null;
-    const result: JSX.Element[] = [];
-    let currentListItems: JSX.Element[] = [];
+    const result: ReactNode[] = [];
+    let currentListItems: ReactNode[] = [];
 
     const flushList = () => {
       if (currentListItems.length === 0) return;
@@ -216,20 +216,8 @@ function SimpleFormattedContent({ content }: { content: string }) {
 
 // Format inline elements (bold, italic, code, links)
 function FormatInline({ text }: { text: string }) {
-  // Split by patterns
-  const parts: JSX.Element[] = [];
-  let remaining = text;
-  let key = 0;
-
-  const patterns = [
-    { regex: /\*\*\*(.+?)\*\*\*/g, wrap: (s: string) => <strong key={key++} className="font-semibold italic">{s}</strong> }, // bold+italic
-    { regex: /\*\*(.+?)\*\*/g, wrap: (s: string) => <strong key={key++} className="font-semibold text-[var(--text)]">{s}</strong> }, // bold
-    { regex: /\*(.+?)\*/g, wrap: (s: string) => <em key={key++} className="italic">{s}</em> }, // italic
-    { regex: /`(.+?)`/g, wrap: (s: string) => <code key={key++} className="bg-[var(--accent-light)] text-[var(--accent)] px-1.5 py-0.5 rounded text-sm font-mono">{s}</code> }, // inline code
-  ];
-
-  // Simple inline formatting
-  let formatted = text
+  // Simple inline formatting with regex replacement
+  const formatted = text
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="font-semibold italic">$1</strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-[var(--text)]">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
@@ -795,7 +783,7 @@ export default function DashboardPage() {
                     { icon: Zap, label: 'Get insights', description: 'Discover trends in data' },
                     { icon: Search, label: 'Research topic', description: 'Find information quickly' },
                     { icon: CheckCircle2, label: 'Verify facts', description: 'Check accuracy of data' },
-                  ].map((action, i) => (
+                  ].map((action) => (
                     <button
                       key={i}
                       onClick={() => setInputValue(action.label)}
@@ -815,7 +803,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto px-6 py-8">
-              {messages.map((msg: Message, index: number) => (
+              {messages.map((msg: Message) => (
                 <div
                   key={msg.id}
                   className={`group flex gap-4 mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
