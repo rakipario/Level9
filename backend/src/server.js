@@ -3,6 +3,20 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+// Polyfill for Node.js 18 (undici/openai compatibility)
+if (!global.File) {
+  const { File } = require('buffer');
+  global.File = File;
+}
+if (!global.Blob) {
+  const { Blob } = require('buffer');
+  global.Blob = Blob;
+}
+if (!global.FormData) {
+  const { FormData } = require('undici');
+  global.FormData = FormData;
+}
+
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
