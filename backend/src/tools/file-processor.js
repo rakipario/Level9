@@ -58,9 +58,9 @@ async function readFile(args, context) {
 
     // If file_id looks like an original filename and we have context with files,
     // try to find the actual file_id (UUID) from the context
-    if (file_id && context.context?.files) {
-        const fileFromContext = context.context.files.find(f => 
-            f.originalName === file_id || f.originalName.includes(file_id)
+    if (file_id && context.files) {
+        const fileFromContext = context.files.find(f => 
+            f.originalName === file_id || f.originalName.includes(file_id) || file_id.includes(f.originalName)
         );
         if (fileFromContext) {
             file_id = fileFromContext.id;

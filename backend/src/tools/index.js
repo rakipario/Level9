@@ -49,22 +49,21 @@ const TOOL_REGISTRY = {
             type: 'function',
             function: {
                 name: 'read_file',
-                description: 'Read and parse a file. Supports CSV, Excel, PDF (with OCR for scanned documents), JSON, text files, and ZIP archives.',
+                description: 'Read and parse uploaded files. Supports: CSV, Excel (.xlsx, .xls), PDF (with OCR), JSON, text files, images, and ZIP archives. Use this when the user asks about file contents.',
                 parameters: {
                     type: 'object',
                     properties: {
                         file_id: {
                             type: 'string',
-                            description: 'The ID of the uploaded file to read'
+                            description: 'The file ID (UUID) from the uploaded file. Look for "ID: xxx" in the user message.'
                         },
                         options: {
                             type: 'object',
-                            description: 'Parsing options (e.g., sheet name for Excel, encoding for text)',
+                            description: 'Optional parsing settings',
                             properties: {
-                                sheet: { type: 'string' },
-                                encoding: { type: 'string' },
-                                limit_rows: { type: 'number' },
-                                extract_from_zip: { type: 'boolean' }
+                                sheet: { type: 'string', description: 'Excel sheet name (default: first sheet)' },
+                                encoding: { type: 'string', description: 'Text encoding (default: utf8)' },
+                                limit_rows: { type: 'number', description: 'Limit number of rows to read' }
                             }
                         }
                     },

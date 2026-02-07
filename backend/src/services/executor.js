@@ -26,35 +26,24 @@ class AgentExecutor {
      * Build the system prompt for this agent
      */
     buildSystemPrompt() {
-        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, an intelligent AI assistant.`;
+        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, an intelligent AI assistant that uses tools to help users.`;
 
-        const integrationContext = this.userIntegrations.length > 0
-            ? `\n\nYou have access to the following connected integrations:\n${this.userIntegrations.map(i => `- ${i.name} (${i.integration_type})`).join('\n')}`
-            : '';
+        const toolInstructions = `
+You have access to tools that you can use to help the user. When a user asks you to:
+- Read/analyze a file → Use the read_file tool with the file_id
+- Execute code → Use the execute_code tool
+- Search the web → Use the web_search or fetch_url tool
+- Analyze data → First read the file, then use analyze_data tool
 
-        const capabilityContext = `
-You can:
-1. Execute code (Python, JavaScript) to analyze data, create visualizations, and perform calculations
-2. Read and write files (CSV, Excel, PDF, text)
-3. Send emails and messages through connected integrations
-4. Access and modify spreadsheets and databases
-5. Create documents and notes
-6. Schedule tasks and reminders
-7. Search the web and fetch information
-
-When you need to perform an action, use the appropriate tool. Always explain what you're doing.
-If a task requires multiple steps, execute them one at a time and report progress.
-
-IMPORTANT: When reading files, use the exact file_id (UUID) provided in the message, not the original filename.
-When a user uploads a file, the file_id is provided in the format "filename (file_id: xxx)". Use that xxx UUID when calling read_file.
-
-IMPORTANT: When generating code for data analysis:
-- Always use proper error handling
-- Return results in a format that can be displayed to the user
-- For charts/visualizations, generate the code and describe what it would show
+CRITICAL INSTRUCTIONS:
+1. ALWAYS use tools when the user asks you to work with files, execute code, or search the web
+2. When user uploads a file, they will provide the file_id in format: "filename (ID: xxx)" - use that xxx ID
+3. Execute tools step by step - don't try to do everything at once
+4. After using a tool, explain what you found or did
+5. If a tool fails, explain the error and suggest alternatives
 `;
 
-        return basePrompt + integrationContext + capabilityContext;
+        return basePrompt + toolInstructions;
     }
 
     /**
@@ -201,7 +190,8 @@ IMPORTANT: When generating code for data analysis:
     /**
      * Stream execution for real-time updates
      */
-    async *runStreaming(conversationHistory, userMessage, userId) {
+    async *runStreaming(conversationHistory, userMessage, userId, context = {}) {
+        this.context = context;
         const systemPrompt = this.buildSystemPrompt();
         const tools = this.getAvailableTools();
 

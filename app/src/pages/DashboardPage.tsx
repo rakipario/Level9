@@ -3,9 +3,8 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
-  Bot, User, Loader2, Menu, Sparkles, ChevronDown,
-  Trash2, MoreHorizontal, FileText, X, Command, Search,
-  Zap, CheckCircle2, AlertCircle
+  Bot, User, Loader2, Menu, Sparkles, Trash2, MoreHorizontal,
+  FileText, X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,264 +15,75 @@ interface Agent {
   id: string;
   name: string;
   description: string;
-  agent_type?: string;
-  type?: string;
-  category?: string;
-  icon?: string;
 }
 
 interface Conversation {
   id: string;
   title: string;
   updated_at: string;
-  agent_id?: string;
 }
 
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  conversation_id?: string;
   createdAt: string;
-  files?: UploadedFile[];
 }
 
 interface UploadedFile {
   id: string;
   originalName: string;
-  size: number;
-  type: string;
 }
 
-// Markdown renderer component for AI responses
+// Markdown renderer
 function MarkdownContent({ content }: { content: string }) {
   return (
-    <div className="markdown-content prose prose-slate max-w-none prose-p:leading-relaxed prose-pre:bg-[var(--bg-subtle)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl prose-code:text-[var(--accent)] prose-code:bg-[var(--accent-light)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-headings:text-[var(--text)] prose-headings:font-semibold prose-a:text-[var(--accent)] prose-a:no-underline hover:prose-a:underline prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // Custom code block rendering
-          code({ node, inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <div className="relative group">
-                <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">{match[1]}</span>
-                </div>
-                <pre className={className} {...props}>
-                  <code className={className}>{children}</code>
-                </pre>
-              </div>
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
-          },
-          // Custom table rendering
-          table({ children }) {
-            return (
-              <div className="overflow-x-auto my-4 border border-[var(--border)] rounded-xl">
-                <table className="min-w-full divide-y divide-[var(--border)]">
-                  {children}
-                </table>
-              </div>
-            );
-          },
-          th({ children }) {
-            return (
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text)] bg-[var(--bg-subtle)] uppercase tracking-wider">
-                {children}
-              </th>
-            );
-          },
-          td({ children }) {
-            return (
-              <td className="px-4 py-3 text-sm text-[var(--text-secondary)] border-t border-[var(--border)]">
-                {children}
-              </td>
-            );
-          }
-        }}
-      >
-        {content}
-      </ReactMarkdown>
+    <div className="prose prose-neutral max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:bg-gray-100 prose-pre:rounded-lg prose-code:text-pink-600 prose-code:bg-pink-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 }
 
-// Simple markdown-like renderer as fallback if react-markdown is not installed
+// Simple formatter fallback
 function SimpleFormattedContent({ content }: { content: string }) {
-  // Format lists
-  const formatLists = (text: string) => {
-    const lines = text.split('\n');
-    let inList = false;
-    let listType: 'ul' | 'ol' | null = null;
-    const result: ReactNode[] = [];
-    let currentListItems: ReactNode[] = [];
-
-    const flushList = () => {
-      if (currentListItems.length === 0) return;
-      const ListTag = listType === 'ol' ? 'ol' : 'ul';
-      result.push(
-        <ListTag key={`list-${result.length}`} className={`my-3 ${listType === 'ol' ? 'list-decimal' : 'list-disc'} pl-5 space-y-1`}>
-          {currentListItems}
-        </ListTag>
-      );
-      currentListItems = [];
-    };
-
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim();
-      
-      // Numbered list (e.g., "1. Item" or "1. **Bold** Item")
-      const numMatch = trimmed.match(/^(\d+)\.\s*(.+)$/);
-      if (numMatch) {
-        if (!inList || listType !== 'ol') {
-          flushList();
-          inList = true;
-          listType = 'ol';
-        }
-        currentListItems.push(
-          <li key={idx} className="text-[var(--text-secondary)] leading-relaxed">
-            <FormatInline text={numMatch[2]} />
-          </li>
-        );
-        return;
-      }
-
-      // Bullet list
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        if (!inList || listType !== 'ul') {
-          flushList();
-          inList = true;
-          listType = 'ul';
-        }
-        const itemText = trimmed.slice(2);
-        currentListItems.push(
-          <li key={idx} className="text-[var(--text-secondary)] leading-relaxed">
-            <FormatInline text={itemText} />
-          </li>
-        );
-        return;
-      }
-
-      // Not a list item
-      if (inList) {
-        flushList();
-        inList = false;
-        listType = null;
-      }
-
-      if (trimmed === '') {
-        result.push(<div key={idx} className="h-2" />);
-      } else if (trimmed.startsWith('# ')) {
-        result.push(
-          <h1 key={idx} className="text-xl font-semibold text-[var(--text)] mt-4 mb-2">
-            {trimmed.slice(2)}
-          </h1>
-        );
-      } else if (trimmed.startsWith('## ')) {
-        result.push(
-          <h2 key={idx} className="text-lg font-semibold text-[var(--text)] mt-4 mb-2">
-            {trimmed.slice(3)}
-          </h2>
-        );
-      } else if (trimmed.startsWith('### ')) {
-        result.push(
-          <h3 key={idx} className="text-base font-semibold text-[var(--text)] mt-3 mb-2">
-            {trimmed.slice(4)}
-          </h3>
-        );
-      } else if (trimmed.startsWith('> ')) {
-        result.push(
-          <blockquote key={idx} className="border-l-2 border-[var(--accent)] pl-4 my-3 text-[var(--text-secondary)] italic">
-            {trimmed.slice(2)}
-          </blockquote>
-        );
-      } else if (trimmed.startsWith('```')) {
-        // Code block - handled by parent
-        result.push(
-          <pre key={idx} className="bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl p-4 my-3 overflow-x-auto">
-            <code className="text-sm text-[var(--text)] font-mono">{trimmed.replace(/```/g, '')}</code>
-          </pre>
-        );
-      } else {
-        result.push(
-          <p key={idx} className="text-[var(--text-secondary)] leading-relaxed mb-2">
-            <FormatInline text={trimmed} />
-          </p>
-        );
-      }
-    });
-
-    flushList();
-    return <>{result}</>;
-  };
-
-  return <div className="formatted-content">{formatLists(content)}</div>;
-}
-
-// Format inline elements (bold, italic, code, links)
-function FormatInline({ text }: { text: string }) {
-  // Simple inline formatting with regex replacement
-  const formatted = text
-    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="font-semibold italic">$1</strong>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-[var(--text)]">$1</strong>')
+  const formatted = content
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
-    .replace(/`(.+?)`/g, '<code class="bg-[var(--accent-light)] text-[var(--accent)] px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
-
+    .replace(/`(.+?)`/g, '<code class="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm font-mono">$1</code>');
   return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
 }
 
-// Main content renderer that tries ReactMarkdown first, falls back to simple
 function FormattedContent({ content }: { content: string }) {
-  // Check if react-markdown is available
-  const [hasReactMarkdown, setHasReactMarkdown] = useState(true);
-
-  useEffect(() => {
-    try {
-      // Test if ReactMarkdown is available
-      if (!ReactMarkdown) {
-        setHasReactMarkdown(false);
-      }
-    } catch {
-      setHasReactMarkdown(false);
-    }
-  }, []);
-
-  if (hasReactMarkdown) {
-    try {
-      return <MarkdownContent content={content} />;
-    } catch {
-      return <SimpleFormattedContent content={content} />;
-    }
+  try {
+    return <MarkdownContent content={content} />;
+  } catch {
+    return <SimpleFormattedContent content={content} />;
   }
-
-  return <SimpleFormattedContent content={content} />;
 }
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [showAgentSelector, setShowAgentSelector] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -285,44 +95,6 @@ export default function DashboardPage() {
     adjustTextareaHeight();
   }, [inputValue]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    fetchAgents();
-    fetchConversations();
-  }, []);
-
-  const fetchAgents = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      const response = await fetch(`${API_URL}/agents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const agentsList = data.agents || data || [];
-        if (Array.isArray(agentsList)) {
-          setAgents(agentsList);
-          if (agentsList.length > 0 && !selectedAgentId) {
-            setSelectedAgentId(agentsList[0].id);
-          }
-        } else {
-          setAgents([]);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching agents:', error);
-      setAgents([]);
-    }
-  };
-
   const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -332,8 +104,7 @@ export default function DashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        const conversationsList = Array.isArray(data) ? data : (data.conversations || []);
-        setConversations(conversationsList);
+        setConversations(Array.isArray(data) ? data : (data.conversations || []));
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -350,20 +121,14 @@ export default function DashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Map backend field names to frontend field names
-        const mappedMessages = data.messages.map((m: any) => ({
+        const mappedMessages = (data.messages || []).map((m: any) => ({
           id: m.id,
           role: m.role,
           content: m.content,
-          conversation_id: m.conversation_id,
           createdAt: m.created_at || m.createdAt,
-          files: m.files
         }));
         setMessages(mappedMessages);
         setCurrentConversationId(id);
-        if (data.conversation.agent_id) {
-          setSelectedAgentId(data.conversation.agent_id);
-        }
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
@@ -376,19 +141,13 @@ export default function DashboardPage() {
     e.stopPropagation();
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
-      
       const response = await fetch(`${API_URL}/ai/conversations/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       if (response.ok) {
         setConversations(prev => prev.filter(c => c.id !== id));
-        if (currentConversationId === id) {
-          startNewChat();
-        }
-        setShowDeleteConfirm(null);
+        if (currentConversationId === id) startNewChat();
       }
     } catch (error) {
       console.error('Error deleting conversation:', error);
@@ -400,58 +159,37 @@ export default function DashboardPage() {
     setInputValue('');
     setCurrentConversationId(null);
     setUploadedFiles([]);
-    if (agents.length > 0) {
-      setSelectedAgentId(agents[0].id);
-    }
-    window.history.replaceState(null, '', '/dashboard');
+    setSidebarOpen(false);
   };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const file = files[0];
     const formData = new FormData();
     formData.append('file', file);
-
     setIsUploading(true);
-    setUploadProgress(0);
 
     try {
       const token = localStorage.getItem('token');
-      
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 100);
-
       const response = await fetch(`${API_URL}/upload/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
       if (response.ok) {
         const data = await response.json();
         setUploadedFiles(prev => [...prev, data.file]);
-        // Add a subtle mention in the input
-        setInputValue(prev => prev ? `${prev} ` : '');
       } else {
         const errorData = await response.json();
-        console.error('Upload failed:', errorData.error);
         alert(`Upload failed: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Failed to upload file. Please try again.');
     } finally {
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 300);
+      setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -464,12 +202,10 @@ export default function DashboardPage() {
     e?.preventDefault();
     if ((!inputValue.trim() && uploadedFiles.length === 0) || loading) return;
 
-    // Build message with file context for AI
+    // Build message with file context
     let messageContent = inputValue;
     if (uploadedFiles.length > 0) {
-      messageContent += '\n\n[Attached files:\n' + 
-        uploadedFiles.map(f => `- ${f.originalName} (file_id: ${f.id})`).join('\n') +
-        '\n\nUse the file_id when calling read_file tool]`';
+      messageContent += '\n\n[Attached files: ' + uploadedFiles.map(f => `${f.originalName} (ID: ${f.id})`).join(', ') + ']';
     }
 
     const userMessage: Message = {
@@ -477,7 +213,6 @@ export default function DashboardPage() {
       role: 'user',
       content: messageContent,
       createdAt: new Date().toISOString(),
-      files: uploadedFiles
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -495,9 +230,8 @@ export default function DashboardPage() {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          agentId: selectedAgentId,
           conversationId: currentConversationId,
-          context: { files: uploadedFiles } // Pass file info as context
+          context: { files: uploadedFiles }
         })
       });
 
@@ -518,13 +252,12 @@ export default function DashboardPage() {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage: Message = {
+      setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'system',
         content: 'Failed to send message. Please try again.',
         createdAt: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setLoading(false);
     }
@@ -535,465 +268,242 @@ export default function DashboardPage() {
     navigate('/');
   };
 
-  const selectedAgent = agents.find(a => a.id === selectedAgentId);
-
   return (
-    <div className="flex h-screen bg-[var(--bg)] overflow-hidden font-sans">
+    <div className="flex h-screen bg-white">
       {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? 'w-[300px]' : 'w-0'} bg-[var(--bg-subtle)] border-r border-[var(--border)] transition-all duration-300 flex flex-col h-full overflow-hidden flex-shrink-0`}
-      >
-        {/* Logo */}
-        <div className="p-5">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-[var(--text)] rounded-xl flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-semibold text-lg tracking-tight text-[var(--text)]">Relay</span>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-1.5 hover:bg-[var(--border)] rounded-lg text-[var(--text-tertiary)] transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-50 border-r border-gray-200 transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0`}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b border-gray-200">
           <button
             onClick={startNewChat}
-            className="w-full flex items-center gap-2.5 px-4 py-3 bg-[var(--text)] text-white hover:bg-[var(--text-secondary)] rounded-xl text-[14px] font-medium transition-all shadow-sm"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            <span>New Chat</span>
+            New chat
+          </button>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 text-gray-500 hover:text-gray-700"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 space-y-6">
-          {/* Agents Section */}
-          <div>
-            <div className="flex items-center justify-between px-3 mb-2">
-              <span className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Agents</span>
-              {agents.length > 0 && (
-                <span className="text-[11px] text-[var(--text-tertiary)]">{agents.length}</span>
-              )}
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {conversations.map(conv => (
+            <div
+              key={conv.id}
+              onClick={() => loadConversation(conv.id)}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                currentConversationId === conv.id 
+                  ? 'bg-gray-200 text-gray-900' 
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <MessageSquare className="h-4 w-4 flex-shrink-0 text-gray-500" />
+              <span className="truncate flex-1">{conv.title || 'New conversation'}</span>
+              <button
+                onClick={(e) => deleteConversation(conv.id, e)}
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-600 transition-opacity"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
-            
-            {agents.length === 0 ? (
-              <div className="mx-3 p-4 rounded-xl bg-white border border-[var(--border)] border-dashed">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="h-4 w-4 text-[var(--text-tertiary)]" />
-                  <span className="text-[13px] font-medium text-[var(--text)]">No agents yet</span>
-                </div>
-                <p className="text-[12px] text-[var(--text-secondary)] mb-3">
-                  Agents help you organize different tasks. You can still chat without agents.
-                </p>
-                <div className="text-[11px] text-[var(--text-tertiary)]">
-                  Use the general assistant for any task
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {agents.map(agent => (
-                  <button
-                    key={agent.id}
-                    onClick={() => setSelectedAgentId(agent.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all ${selectedAgentId === agent.id
-                      ? 'bg-white text-[var(--text)] font-medium shadow-sm border border-[var(--border)]'
-                      : 'text-[var(--text-secondary)] hover:bg-white/50 hover:text-[var(--text)]'
-                    }`}
-                  >
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedAgentId === agent.id ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}>
-                      <Bot className={`h-3.5 w-3.5 ${selectedAgentId === agent.id ? 'text-white' : 'text-[var(--text-tertiary)]'}`} />
-                    </div>
-                    <span className="truncate text-left">{agent.name}</span>
-                    {selectedAgentId === agent.id && (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent)] ml-auto flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Chats Section */}
-          <div>
-            <div className="flex items-center justify-between px-3 mb-2">
-              <span className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Recent Chats</span>
-              {conversations.length > 0 && (
-                <span className="text-[11px] text-[var(--text-tertiary)]">{conversations.length}</span>
-              )}
-            </div>
-            <div className="space-y-0.5">
-              {conversations.map(conv => (
-                <div
-                  key={conv.id}
-                  onClick={() => loadConversation(conv.id)}
-                  className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all cursor-pointer ${currentConversationId === conv.id
-                    ? 'bg-white text-[var(--text)] font-medium shadow-sm border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:bg-white/50 hover:text-[var(--text)]'
-                  }`}
-                >
-                  <MessageSquare className={`h-3.5 w-3.5 flex-shrink-0 ${currentConversationId === conv.id ? 'text-[var(--accent)]' : ''}`} />
-                  <span className="truncate text-left flex-1">{conv.title || 'Untitled Chat'}</span>
-                  
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeleteConfirm(showDeleteConfirm === conv.id ? null : conv.id);
-                    }}
-                    className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded-md ${showDeleteConfirm === conv.id ? 'opacity-100 bg-red-50' : ''}`}
-                  >
-                    <MoreHorizontal className="h-3 w-3 text-[var(--text-tertiary)]" />
-                  </button>
-
-                  {/* Delete confirmation */}
-                  {showDeleteConfirm === conv.id && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--border)] rounded-lg shadow-lg p-2 z-50 min-w-[120px]">
-                      <button
-                        onClick={(e) => deleteConversation(conv.id, e)}
-                        className="flex items-center gap-2 w-full px-2 py-1.5 text-[12px] text-red-600 hover:bg-red-50 rounded-md"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete chat
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {conversations.length === 0 && (
-                <div className="px-3 py-4 text-[13px] text-[var(--text-tertiary)] italic text-center bg-white/50 rounded-xl">
-                  No recent chats
-                </div>
-              )}
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Bottom Actions */}
-        <div className="p-3 border-t border-[var(--border)]">
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-[var(--text-secondary)] hover:bg-white rounded-xl transition-colors">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-[var(--text-secondary)] hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Sign out</span>
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="p-3 border-t border-gray-200 space-y-1">
+          <button className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-lg w-full transition-colors">
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-lg w-full transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Log out
+          </button>
         </div>
       </aside>
 
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full relative bg-[var(--bg)]">
+      <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-[var(--border)] bg-white/50 backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            {!sidebarOpen && (
-              <>
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="p-2 hover:bg-[var(--bg-subtle)] rounded-xl text-[var(--text-secondary)] transition-colors"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
-                <div className="h-4 w-px bg-[var(--border)]" />
-              </>
-            )}
-            
-            {/* Agent Selector */}
-            {agents.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowAgentSelector(!showAgentSelector)}
-                  className="flex items-center gap-2.5 px-3 py-2 hover:bg-[var(--bg-subtle)] rounded-xl transition-colors"
-                >
-                  <div className="h-7 w-7 bg-[var(--accent)] rounded-lg flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span className="text-[14px] font-medium text-[var(--text)]">
-                    {selectedAgent?.name || 'Select Agent'}
-                  </span>
-                  <ChevronDown className="h-4 w-4 text-[var(--text-tertiary)]" />
-                </button>
-
-                {showAgentSelector && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowAgentSelector(false)}
-                    />
-                    <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-[var(--border)] rounded-2xl shadow-xl z-50 p-2">
-                      <div className="px-3 py-2 text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-                        Select Agent
-                      </div>
-                      {agents.map(agent => (
-                        <button
-                          key={agent.id}
-                          onClick={() => {
-                            setSelectedAgentId(agent.id);
-                            setShowAgentSelector(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-colors ${selectedAgentId === agent.id ? 'bg-[var(--accent-light)] text-[var(--accent)]' : 'text-[var(--text)] hover:bg-[var(--bg-subtle)]'}`}
-                        >
-                          <Bot className="h-4 w-4" />
-                          <div className="text-left">
-                            <div className="font-medium">{agent.name}</div>
-                            <div className="text-[11px] text-[var(--text-tertiary)] truncate max-w-[160px]">
-                              {agent.description || 'No description'}
-                            </div>
-                          </div>
-                          {selectedAgentId === agent.id && (
-                            <CheckCircle2 className="h-4 w-4 ml-auto" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+        <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-gray-700" />
+            <span className="font-semibold text-gray-900">Relay</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text)] hover:bg-[var(--bg-subtle)] rounded-xl transition-colors">
-              <Command className="h-4 w-4" />
-            </button>
-            <div className="h-4 w-px bg-[var(--border)]" />
-            <button className="h-8 w-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center hover:bg-[var(--border)] transition-colors">
-              <User className="h-4 w-4 text-[var(--text-secondary)]" />
-            </button>
-          </div>
+          
+          <div className="w-8" /> {/* Spacer for alignment */}
         </header>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto bg-[var(--bg)]">
+        <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center p-8">
-              <div className="max-w-xl w-full text-center">
-                {/* Welcome State */}
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[var(--accent-light)] border border-[var(--accent)]/20 mb-8">
-                  <Sparkles className="h-8 w-8 text-[var(--accent)]" />
+            <div className="h-full flex flex-col items-center justify-center px-4">
+              <div className="text-center max-w-md">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-6">
+                  <Sparkles className="h-6 w-6 text-gray-600" />
                 </div>
-                
-                <h2 className="text-3xl font-semibold text-[var(--text)] mb-3 tracking-tight">
-                  {selectedAgent ? `Chat with ${selectedAgent.name}` : 'How can I help you today?'}
-                </h2>
-                <p className="text-[var(--text-secondary)] text-lg mb-10 max-w-md mx-auto">
-                  I can help you analyze data, generate reports, or answer any questions you might have.
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                  How can I help you today?
+                </h1>
+                <p className="text-gray-500">
+                  I can analyze files, search the web, execute code, and answer your questions.
                 </p>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-                  {[
-                    { icon: FileText, label: 'Analyze a document', description: 'Upload and analyze files' },
-                    { icon: Zap, label: 'Get insights', description: 'Discover trends in data' },
-                    { icon: Search, label: 'Research topic', description: 'Find information quickly' },
-                    { icon: CheckCircle2, label: 'Verify facts', description: 'Check accuracy of data' },
-                  ].map((action, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setInputValue(action.label)}
-                      className="flex items-start gap-3 p-4 text-left bg-white border border-[var(--border)] hover:border-[var(--accent)]/30 hover:shadow-lg hover:shadow-[var(--accent)]/5 rounded-2xl transition-all group"
-                    >
-                      <div className="h-8 w-8 rounded-xl bg-[var(--bg-subtle)] flex items-center justify-center group-hover:bg-[var(--accent-light)] transition-colors">
-                        <action.icon className="h-4 w-4 text-[var(--text-tertiary)] group-hover:text-[var(--accent)]" />
-                      </div>
-                      <div>
-                        <div className="text-[13px] font-medium text-[var(--text)]">{action.label}</div>
-                        <div className="text-[11px] text-[var(--text-tertiary)]">{action.description}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-6 py-8 overflow-x-hidden">
-              {messages.map((msg: Message) => (
+            <div className="max-w-3xl mx-auto">
+              {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`group flex gap-4 mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`py-6 px-4 ${msg.role === 'assistant' ? 'bg-gray-50' : 'bg-white'}`}
                 >
-                  {msg.role !== 'user' && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="h-8 w-8 bg-[var(--text)] rounded-xl flex items-center justify-center">
-                        <Sparkles className="h-4 w-4 text-white" />
-                      </div>
+                  <div className="max-w-3xl mx-auto flex gap-4">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
+                      {msg.role === 'user' ? (
+                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-gray-600" />
+                        </div>
+                      ) : msg.role === 'assistant' ? (
+                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                          <Sparkles className="h-5 w-5 text-white" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                          <Bot className="h-5 w-5 text-red-600" />
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  <div className={`flex-1 ${msg.role === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}`}>
-                    <div className={`${msg.role === 'user' ? 'flex justify-end' : ''}`}>
-                      <div className={`inline-block max-w-full overflow-hidden ${msg.role === 'user'
-                        ? 'bg-[var(--text)] text-white rounded-2xl rounded-br-sm'
-                        : 'bg-white border border-[var(--border)] text-[var(--text)] rounded-2xl rounded-bl-sm shadow-sm'
-                      } px-5 py-3.5`}>
-                        {msg.role === 'user' ? (
-                          <div className="text-[15px] leading-relaxed break-words">
-                            <FormatInline text={msg.content} />
-                          </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900 mb-1">
+                        {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'Relay' : 'System'}
+                      </div>
+                      <div className="text-gray-800 leading-relaxed">
+                        {msg.role === 'assistant' ? (
+                          <FormattedContent content={msg.content} />
                         ) : (
-                          <div className="text-[15px] overflow-x-auto">
-                            <FormattedContent content={msg.content} />
-                          </div>
+                          <div className="whitespace-pre-wrap">{msg.content}</div>
                         )}
                       </div>
                     </div>
-                    
-                    {/* Timestamp */}
-                    <div className={`flex items-center gap-2 mt-1.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                      <span className="text-[11px] text-[var(--text-tertiary)]">
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
                   </div>
-
-                  {msg.role === 'user' && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="h-8 w-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden border border-[var(--border)]">
-                        <User className="h-4 w-4 text-[var(--text-secondary)]" />
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
               
               {loading && (
-                <div className="flex gap-4">
-                  <div className="h-8 w-8 bg-[var(--text)] rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
-                    <Sparkles className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="flex items-center gap-1.5 h-10 px-4 bg-white border border-[var(--border)] rounded-full">
-                    <div className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <div className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <div className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce" />
+                <div className="py-6 px-4 bg-gray-50">
+                  <div className="max-w-3xl mx-auto flex gap-4">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    </div>
                   </div>
                 </div>
               )}
-              <div ref={chatEndRef} className="h-4" />
+              <div ref={chatEndRef} />
             </div>
           )}
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-[var(--bg)] border-t border-[var(--border)]">
+        <div className="border-t border-gray-200 bg-white p-4">
           <div className="max-w-3xl mx-auto">
-            {/* Uploaded Files Preview */}
+            {/* File attachments */}
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {uploadedFiles.map(file => (
                   <div 
                     key={file.id} 
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-light)] border border-[var(--accent)]/20 rounded-lg"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm"
                   >
-                    <FileText className="h-3.5 w-3.5 text-[var(--accent)]" />
-                    <span className="text-[12px] text-[var(--accent)] max-w-[150px] truncate">
-                      {file.originalName}
-                    </span>
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-700 truncate max-w-[200px]">{file.originalName}</span>
                     <button 
                       onClick={() => removeUploadedFile(file.id)}
-                      className="p-0.5 hover:bg-[var(--accent)]/10 rounded"
+                      className="text-gray-400 hover:text-gray-600"
                     >
-                      <X className="h-3 w-3 text-[var(--accent)]" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            <form
-              onSubmit={handleSendMessage}
-              className="relative flex items-end gap-2 p-2 bg-white border border-[var(--border)] rounded-2xl focus-within:border-[var(--accent)] focus-within:ring-4 focus-within:ring-[var(--accent-light)] transition-all shadow-sm"
-            >
+            <form onSubmit={handleSendMessage} className="relative">
               <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
                 onChange={handleFileUpload}
-                multiple={false}
               />
               
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || loading}
-                className={`p-3 text-[var(--text-tertiary)] hover:text-[var(--text)] hover:bg-[var(--bg-subtle)] rounded-xl transition-colors flex-shrink-0 ${isUploading ? 'opacity-50' : ''}`}
-                title="Attach file"
-              >
-                {isUploading ? (
-                  <div className="relative">
-                    <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" />
-                    {uploadProgress > 0 && (
-                      <svg className="absolute inset-0 h-5 w-5 -rotate-90">
-                        <circle
-                          cx="10"
-                          cy="10"
-                          r="8"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="text-[var(--accent-light)]"
-                        />
-                        <circle
-                          cx="10"
-                          cy="10"
-                          r="8"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray={`${uploadProgress * 0.5} 100`}
-                          className="text-[var(--accent)]"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                ) : (
-                  <Paperclip className="h-5 w-5" />
-                )}
-              </button>
+              <div className="flex items-end gap-2 border border-gray-300 rounded-2xl bg-white shadow-sm focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent transition-all">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                </button>
 
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="Message..."
-                disabled={loading}
-                rows={1}
-                className="flex-1 bg-transparent border-none outline-none text-[15px] placeholder:text-[var(--text-tertiary)] text-[var(--text)] resize-none py-3.5 max-h-[200px] disabled:opacity-50"
-              />
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Message..."
+                  disabled={loading}
+                  rows={1}
+                  className="flex-1 py-3 bg-transparent border-none outline-none text-gray-900 placeholder:text-gray-400 resize-none max-h-[200px]"
+                />
 
-              <button
-                type="submit"
-                disabled={(!inputValue.trim() && uploadedFiles.length === 0) || loading}
-                className="p-3 bg-[var(--text)] text-white rounded-xl hover:bg-[var(--text-secondary)] disabled:opacity-40 disabled:hover:bg-[var(--text)] transition-colors flex-shrink-0"
-              >
-                {loading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
+                <button
+                  type="submit"
+                  disabled={(!inputValue.trim() && uploadedFiles.length === 0) || loading}
+                  className="p-3 text-gray-500 hover:text-green-600 disabled:opacity-30 transition-colors"
+                >
                   <Send className="h-5 w-5" />
-                )}
-              </button>
+                </button>
+              </div>
             </form>
             
-            <div className="flex items-center justify-between mt-3 px-2">
-              <p className="text-[11px] text-[var(--text-tertiary)]">
-                AI can make mistakes. Please verify important information.
-              </p>
-
-            </div>
+            <p className="text-center text-xs text-gray-400 mt-2">
+              AI can make mistakes. Please verify important information.
+            </p>
           </div>
         </div>
       </main>

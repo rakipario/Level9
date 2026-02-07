@@ -93,9 +93,18 @@ router.post('/chat', authenticate, async (req, res) => {
     );
     const userIntegrations = integrationsResult.rows;
 
-    // Create and run agent executor
+    // Create and run agent executor with context
     const executor = new AgentExecutor(agentConfig, userIntegrations);
     const result = await executor.run(conversationHistory, message, userId, context || {});
+    
+    // Update conversation title if it's new
+    if (!conversationId && result.response) {
+      const title = result.response.substring(0, 50) + '...';
+      await query(
+        'UPDATE conversations SET title = $1 WHERE id = $2',
+        [title, convId]
+      );
+    }
 
     // Save AI response
     await query(
@@ -193,11 +202,11 @@ router.post('/chat/stream', authenticate, async (req, res) => {
       [userId]
     );
 
-    // Create executor and stream
+    // Create executor and stream with context
     const executor = new AgentExecutor(agentConfig, integrationsResult.rows);
     let fullResponse = '';
 
-    for await (const event of executor.runStreaming(conversationHistory, message, userId)) {
+    for await (const event of executor.runStreaming(conversationHistory, message, userId, context || {})) {
       res.write(`data: ${JSON.stringify(event)}\n\n`);
 
       if (event.type === 'content') {
