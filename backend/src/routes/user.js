@@ -57,40 +57,40 @@ router.patch('/profile', authenticateToken, async (req, res) => {
   }
 });
 
-router.post / select - plan', authenticateToken, async (req, res) => {
-try {
-  const { planType } = req.body;
+router.post('/select-plan', authenticateToken, async (req, res) => {
+  try {
+    const { planType } = req.body;
 
-  if (!['free', 'pro', 'team'].includes(planType)) {
-    return res.status(400).json({ error: 'Invalid plan type' });
-  }
+    if (!['free', 'pro', 'team'].includes(planType)) {
+      return res.status(400).json({ error: 'Invalid plan type' });
+    }
 
-  const result = await pool.query(
-    `UPDATE users 
+    const result = await pool.query(
+      `UPDATE users 
        SET plan_type = $1, plan_status = 'active', updated_at = CURRENT_TIMESTAMP
        WHERE id = $2
        RETURNING id, plan_type, plan_status`,
-    [planType, req.user.userId]
-  );
+      [planType, req.user.userId]
+    );
 
-  if (result.rows.length === 0) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  await pool.query(
-    `INSERT INTO activity_logs (user_id, action, details) 
+    await pool.query(
+      `INSERT INTO activity_logs (user_id, action, details) 
        VALUES ($1, 'plan_selected', $2)`,
-    [req.user.userId, JSON.stringify({ planType })]
-  );
+      [req.user.userId, JSON.stringify({ planType })]
+    );
 
-  res.json({
-    message: 'Plan selected successfully',
-    plan: result.rows[0]
-  });
-} catch (error) {
-  console.error('Select plan error:', error);
-  res.status(500).json({ error: 'Failed to select plan' });
-}
+    res.json({
+      message: 'Plan selected successfully',
+      plan: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Select plan error:', error);
+    res.status(500).json({ error: 'Failed to select plan' });
+  }
 });
 
 router.get('/activity', authenticateToken, async (req, res) => {
