@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, ChevronRight, Loader2, ExternalLink, AlertCircle, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, Loader2, ExternalLink, AlertCircle, X } from 'lucide-react';
 
 interface Provider {
     id: string;
@@ -208,8 +208,8 @@ export default function IntegrationWizard({ onClose, onComplete }: IntegrationWi
                                     <div
                                         key={provider.id}
                                         className={`p-4 rounded-xl border-2 transition-all duration-200 ${isConnected
-                                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">

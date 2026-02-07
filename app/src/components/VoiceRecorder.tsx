@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Loader2, StopCircle, Upload, X, Languages, Check } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Mic, Loader2, StopCircle, Upload, X, Languages, Check } from 'lucide-react';
 
 interface VoiceRecorderProps {
     onTranscription: (text: string) => void;
@@ -43,7 +43,7 @@ export default function VoiceRecorder({ onTranscription, onError, disabled }: Vo
 
     const mediaRecorder = useRef<MediaRecorder | null>(null);
     const audioChunks = useRef<Blob[]>([]);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -228,8 +228,8 @@ export default function VoiceRecorder({ onTranscription, onError, disabled }: Vo
                                             setShowLanguages(false);
                                         }}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${selectedLanguage === lang.code
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                                             }`}
                                     >
                                         {lang.label}

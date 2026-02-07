@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Code, Copy, Check, Settings, Palette, Globe, Eye, Trash2, Plus, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Code, Copy, Check, Palette, Globe, Trash2, Plus, AlertCircle } from 'lucide-react';
 
 interface Widget {
     id: string;
@@ -31,7 +31,7 @@ interface WidgetDeployerProps {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-export default function WidgetDeployer({ onClose }: WidgetDeployerProps) {
+export default function WidgetDeployer({ }: WidgetDeployerProps) {
     const [widgets, setWidgets] = useState<Widget[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -229,8 +229,8 @@ export default function WidgetDeployer({ onClose }: WidgetDeployerProps) {
                                                 {widget.config.position || 'bottom-right'}
                                             </span>
                                             <span className={`px-2 py-0.5 rounded-full text-xs ${widget.status === 'active'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-gray-100 text-gray-600'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-gray-100 text-gray-600'
                                                 }`}>
                                                 {widget.status}
                                             </span>
@@ -314,8 +314,8 @@ export default function WidgetDeployer({ onClose }: WidgetDeployerProps) {
                                             key={theme}
                                             onClick={() => setConfig({ ...config, theme })}
                                             className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${config.theme === theme
-                                                    ? 'border-black dark:border-white bg-gray-100 dark:bg-gray-800'
-                                                    : 'border-gray-200 dark:border-gray-700'
+                                                ? 'border-black dark:border-white bg-gray-100 dark:bg-gray-800'
+                                                : 'border-gray-200 dark:border-gray-700'
                                                 }`}
                                         >
                                             {theme.charAt(0).toUpperCase() + theme.slice(1)}
@@ -335,8 +335,8 @@ export default function WidgetDeployer({ onClose }: WidgetDeployerProps) {
                                             key={pos}
                                             onClick={() => setConfig({ ...config, position: pos })}
                                             className={`py-2 px-4 rounded-lg border-2 text-sm transition-all ${config.position === pos
-                                                    ? 'border-black dark:border-white bg-gray-100 dark:bg-gray-800'
-                                                    : 'border-gray-200 dark:border-gray-700'
+                                                ? 'border-black dark:border-white bg-gray-100 dark:bg-gray-800'
+                                                : 'border-gray-200 dark:border-gray-700'
                                                 }`}
                                         >
                                             {pos.replace('-', ' ')}
