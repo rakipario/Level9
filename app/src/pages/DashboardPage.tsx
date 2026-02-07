@@ -783,9 +783,9 @@ export default function DashboardPage() {
                     { icon: Zap, label: 'Get insights', description: 'Discover trends in data' },
                     { icon: Search, label: 'Research topic', description: 'Find information quickly' },
                     { icon: CheckCircle2, label: 'Verify facts', description: 'Check accuracy of data' },
-                  ].map((action) => (
+                  ].map((action, idx) => (
                     <button
-                      key={i}
+                      key={idx}
                       onClick={() => setInputValue(action.label)}
                       className="flex items-start gap-3 p-4 text-left bg-white border border-[var(--border)] hover:border-[var(--accent)]/30 hover:shadow-lg hover:shadow-[var(--accent)]/5 rounded-2xl transition-all group"
                     >
