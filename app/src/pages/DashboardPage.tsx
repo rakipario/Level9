@@ -350,7 +350,16 @@ export default function DashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages);
+        // Map backend field names to frontend field names
+        const mappedMessages = data.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          conversation_id: m.conversation_id,
+          createdAt: m.created_at || m.createdAt,
+          files: m.files
+        }));
+        setMessages(mappedMessages);
         setCurrentConversationId(id);
         if (data.conversation.agent_id) {
           setSelectedAgentId(data.conversation.agent_id);
@@ -570,14 +579,11 @@ export default function DashboardPage() {
                   <span className="text-[13px] font-medium text-[var(--text)]">No agents yet</span>
                 </div>
                 <p className="text-[12px] text-[var(--text-secondary)] mb-3">
-                  Create your first AI agent to get started.
+                  Agents help you organize different tasks. You can still chat without agents.
                 </p>
-                <button 
-                  onClick={() => navigate('/dashboard/agents/create')}
-                  className="w-full py-2 text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] rounded-lg transition-colors"
-                >
-                  + Create Agent
-                </button>
+                <div className="text-[11px] text-[var(--text-tertiary)]">
+                  Use the general assistant for any task
+                </div>
               </div>
             ) : (
               <div className="space-y-0.5">
@@ -956,15 +962,15 @@ export default function DashboardPage() {
                     handleSendMessage();
                   }
                 }}
-                placeholder={agents.length === 0 ? "Create an agent first to start chatting..." : "Message..."}
-                disabled={loading || agents.length === 0}
+                placeholder="Message..."
+                disabled={loading}
                 rows={1}
                 className="flex-1 bg-transparent border-none outline-none text-[15px] placeholder:text-[var(--text-tertiary)] text-[var(--text)] resize-none py-3.5 max-h-[200px] disabled:opacity-50"
               />
 
               <button
                 type="submit"
-                disabled={(!inputValue.trim() && uploadedFiles.length === 0) || loading || agents.length === 0}
+                disabled={(!inputValue.trim() && uploadedFiles.length === 0) || loading}
                 className="p-3 bg-[var(--text)] text-white rounded-xl hover:bg-[var(--text-secondary)] disabled:opacity-40 disabled:hover:bg-[var(--text)] transition-colors flex-shrink-0"
               >
                 {loading ? (
@@ -979,14 +985,7 @@ export default function DashboardPage() {
               <p className="text-[11px] text-[var(--text-tertiary)]">
                 AI can make mistakes. Please verify important information.
               </p>
-              {agents.length === 0 && (
-                <button 
-                  onClick={() => navigate('/dashboard/agents/create')}
-                  className="text-[11px] text-[var(--accent)] hover:underline"
-                >
-                  Create your first agent →
-                </button>
-              )}
+
             </div>
           </div>
         </div>

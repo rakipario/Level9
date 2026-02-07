@@ -17,12 +17,13 @@ const { authenticateToken } = require('../utils/auth');
 const router = express.Router();
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for regular files
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB for regular files
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB for audio files
 
 // Allowed file types
 const ALLOWED_TYPES = {
     documents: ['.csv', '.xlsx', '.xls', '.json', '.txt', '.md', '.pdf', '.zip'],
+    images: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico'],
     audio: ['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm', '.ogg', '.flac']
 };
 
@@ -46,12 +47,12 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const allAllowed = [...ALLOWED_TYPES.documents, ...ALLOWED_TYPES.audio];
+    const allAllowed = [...ALLOWED_TYPES.documents, ...ALLOWED_TYPES.images, ...ALLOWED_TYPES.audio];
 
     if (allAllowed.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error(`File type not allowed: ${ext}`), false);
+        cb(new Error(`File type not allowed: ${ext}. Allowed: documents, images, audio files`), false);
     }
 };
 
@@ -80,7 +81,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
             // Delete the uploaded file
             await fs.unlink(req.file.path).catch(() => { });
             return res.status(400).json({
-                error: `File too large. Maximum size: ${isAudio ? '25MB for audio' : '10MB'}`
+                error: `File too large. Maximum size: 20MB`
             });
         }
 
@@ -122,7 +123,7 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
                 await fs.unlink(file.path).catch(() => { });
                 errors.push({
                     name: file.originalname,
-                    error: `File too large (max ${isAudio ? '25MB' : '10MB'})`
+                    error: `File too large (max ${isAudio ? '25MB' : '20MB'})`
                 });
             } else {
                 results.push({
@@ -226,9 +227,11 @@ router.post('/transcribe/:fileId', authenticateToken, async (req, res) => {
 router.get('/supported-types', (req, res) => {
     res.json({
         documents: ALLOWED_TYPES.documents,
+        images: ALLOWED_TYPES.images,
         audio: ALLOWED_TYPES.audio,
         limits: {
-            documents: '10MB',
+            documents: '20MB',
+            images: '20MB',
             audio: '25MB'
         }
     });
