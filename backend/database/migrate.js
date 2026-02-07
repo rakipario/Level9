@@ -173,6 +173,17 @@ CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user ON oauth_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_widgets_agent ON widgets(agent_id);
 CREATE INDEX IF NOT EXISTS idx_executions_user ON executions(user_id);
 CREATE INDEX IF NOT EXISTS idx_executions_conversation ON executions(conversation_id);
+
+-- Fix for agent_type column mismatch
+DO $$
+BEGIN
+  IF EXISTS(SELECT * FROM information_schema.columns WHERE table_name = 'agents' AND column_name = 'type') THEN
+    ALTER TABLE agents RENAME COLUMN type TO agent_type;
+  END IF;
+  
+  -- Add category column if it doesn't exist
+  ALTER TABLE agents ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+END $$;
 `;
 
 async function runMigrations() {
