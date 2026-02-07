@@ -56,8 +56,15 @@ export default function DashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setAgents(data);
-        if (data.length > 0) setSelectedAgentId(data[0].id);
+        if (Array.isArray(data)) {
+          setAgents(data);
+          if (data.length > 0) setSelectedAgentId(data[0].id);
+        } else {
+          console.error('Agents data is not an array:', data);
+          setAgents([]);
+        }
+      } else {
+        console.error('Failed to fetch agents:', response.statusText);
       }
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -151,7 +158,7 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-y-auto px-4 py-2">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">Agents</div>
           <div className="space-y-1">
-            {agents.map(agent => (
+            {Array.isArray(agents) && agents.map(agent => (
               <button
                 key={agent.id}
                 onClick={() => setSelectedAgentId(agent.id)}
