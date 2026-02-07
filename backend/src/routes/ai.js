@@ -95,7 +95,7 @@ router.post('/chat', authenticate, async (req, res) => {
 
     // Create and run agent executor
     const executor = new AgentExecutor(agentConfig, userIntegrations);
-    const result = await executor.run(conversationHistory, message, userId);
+    const result = await executor.run(conversationHistory, message, userId, context || {});
 
     // Save AI response
     await query(

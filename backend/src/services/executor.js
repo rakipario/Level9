@@ -45,6 +45,9 @@ You can:
 When you need to perform an action, use the appropriate tool. Always explain what you're doing.
 If a task requires multiple steps, execute them one at a time and report progress.
 
+IMPORTANT: When reading files, use the exact file_id (UUID) provided in the message, not the original filename.
+When a user uploads a file, the file_id is provided in the format "filename (file_id: xxx)". Use that xxx UUID when calling read_file.
+
 IMPORTANT: When generating code for data analysis:
 - Always use proper error handling
 - Return results in a format that can be displayed to the user
@@ -65,7 +68,8 @@ IMPORTANT: When generating code for data analysis:
     /**
      * Main execution loop - runs until complete or max iterations
      */
-    async run(conversationHistory, userMessage, userId) {
+    async run(conversationHistory, userMessage, userId, context = {}) {
+        this.context = context; // Store context for tool access
         const systemPrompt = this.buildSystemPrompt();
         const tools = this.getAvailableTools();
 
@@ -165,7 +169,8 @@ IMPORTANT: When generating code for data analysis:
                 const output = await executeTool(name, args, {
                     userId,
                     integrations: this.userIntegrations,
-                    state: this.state
+                    state: this.state,
+                    context: this.context
                 });
 
                 // Update state if tool returns state updates

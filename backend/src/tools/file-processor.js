@@ -13,7 +13,7 @@ const AdmZip = require('adm-zip');
 const pdfParse = require('pdf-parse');
 const Tesseract = require('tesseract.js');
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 
 // Ensure uploads directory exists
@@ -54,7 +54,18 @@ async function resolveFilePath(fileId, userId) {
  * Read and parse a file
  */
 async function readFile(args, context) {
-    const { file_id, options = {} } = args;
+    let { file_id, options = {} } = args;
+
+    // If file_id looks like an original filename and we have context with files,
+    // try to find the actual file_id (UUID) from the context
+    if (file_id && context.context?.files) {
+        const fileFromContext = context.context.files.find(f => 
+            f.originalName === file_id || f.originalName.includes(file_id)
+        );
+        if (fileFromContext) {
+            file_id = fileFromContext.id;
+        }
+    }
 
     const filePath = await resolveFilePath(file_id, context.userId);
     const stats = await fs.stat(filePath);

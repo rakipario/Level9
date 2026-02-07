@@ -186,6 +186,23 @@
   .markdown-content hr {
     @apply my-4 border-[var(--border)];
   }
+  
+  /* Fix overflow issues in chat */
+  .markdown-content * {
+    @apply max-w-full;
+  }
+  
+  .markdown-content pre {
+    @apply overflow-x-auto whitespace-pre-wrap break-words;
+  }
+  
+  .markdown-content code {
+    @apply break-words;
+  }
+  
+  .markdown-content p {
+    @apply break-words;
+  }
 }
 
 @layer utilities {

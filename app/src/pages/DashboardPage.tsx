@@ -464,12 +464,18 @@ export default function DashboardPage() {
     e?.preventDefault();
     if ((!inputValue.trim() && uploadedFiles.length === 0) || loading) return;
 
+    // Build message with file context for AI
+    let messageContent = inputValue;
+    if (uploadedFiles.length > 0) {
+      messageContent += '\n\n[Attached files:\n' + 
+        uploadedFiles.map(f => `- ${f.originalName} (file_id: ${f.id})`).join('\n') +
+        '\n\nUse the file_id when calling read_file tool]`';
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue + (uploadedFiles.length > 0 
-        ? `\n\n[Attached files: ${uploadedFiles.map(f => f.originalName).join(', ')}]` 
-        : ''),
+      content: messageContent,
       createdAt: new Date().toISOString(),
       files: uploadedFiles
     };
@@ -490,7 +496,8 @@ export default function DashboardPage() {
         body: JSON.stringify({
           message: userMessage.content,
           agentId: selectedAgentId,
-          conversationId: currentConversationId
+          conversationId: currentConversationId,
+          context: { files: uploadedFiles } // Pass file info as context
         })
       });
 
@@ -808,7 +815,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-6 py-8">
+            <div className="max-w-3xl mx-auto px-6 py-8 overflow-x-hidden">
               {messages.map((msg: Message) => (
                 <div
                   key={msg.id}
@@ -824,16 +831,16 @@ export default function DashboardPage() {
 
                   <div className={`flex-1 ${msg.role === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}`}>
                     <div className={`${msg.role === 'user' ? 'flex justify-end' : ''}`}>
-                      <div className={`inline-block ${msg.role === 'user'
+                      <div className={`inline-block max-w-full overflow-hidden ${msg.role === 'user'
                         ? 'bg-[var(--text)] text-white rounded-2xl rounded-br-sm'
                         : 'bg-white border border-[var(--border)] text-[var(--text)] rounded-2xl rounded-bl-sm shadow-sm'
                       } px-5 py-3.5`}>
                         {msg.role === 'user' ? (
-                          <div className="text-[15px] leading-relaxed">
+                          <div className="text-[15px] leading-relaxed break-words">
                             <FormatInline text={msg.content} />
                           </div>
                         ) : (
-                          <div className="text-[15px]">
+                          <div className="text-[15px] overflow-x-auto">
                             <FormattedContent content={msg.content} />
                           </div>
                         )}
