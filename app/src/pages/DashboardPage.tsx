@@ -426,6 +426,7 @@ export default function DashboardPage() {
               )}
               <div className="h-32 md:h-48 flex-shrink-0" ref={chatEndRef} />
             </>
+          )}
         </div>
 
         {/* Input Area */}
