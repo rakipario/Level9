@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -115,6 +115,7 @@ export default function DashboardPage() {
       });
       if (response.ok) {
         const data = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mappedMessages = (data.messages || []).map((m: any) => ({
           id: m.id,
           role: m.role,
@@ -209,7 +210,7 @@ export default function DashboardPage() {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setInputValue('');
     setUploadedFiles([]);
     setLoading(true);
@@ -243,10 +244,10 @@ export default function DashboardPage() {
         fetchConversations();
       }
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev: Message[]) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, {
+      setMessages((prev: Message[]) => [...prev, {
         id: Date.now().toString(),
         role: 'system',
         content: 'Failed to send message. Please try again.',
@@ -289,11 +290,10 @@ export default function DashboardPage() {
             <div
               key={conv.id}
               onClick={() => loadConversation(conv.id)}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${
-                currentConversationId === conv.id 
-                  ? 'bg-gray-200 text-gray-900' 
-                  : 'text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${currentConversationId === conv.id
+                ? 'bg-gray-200 text-gray-900'
+                : 'text-gray-700 hover:bg-gray-200'
+                }`}
             >
               <MessageSquare className="h-4 w-4 flex-shrink-0 text-gray-500" />
               <span className="truncate flex-1">{conv.title || 'New conversation'}</span>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -341,12 +341,12 @@ export default function DashboardPage() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          
+
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-gray-700" />
             <span className="font-semibold text-gray-900">Relay</span>
           </div>
-          
+
           <div className="w-8" /> {/* Spacer for alignment */}
         </header>
 
@@ -367,64 +367,65 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto">
+            <>
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`py-6 px-4 ${msg.role === 'assistant' ? 'bg-gray-50' : 'bg-white'}`}
+                  className={`group w-full text-gray-800 border-b border-black/10 dark:border-gray-900/50 ${msg.role === 'assistant' ? 'bg-gray-50' : 'bg-white'
+                    }`}
                 >
-                  <div className="max-w-3xl mx-auto flex gap-4">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
-                      {msg.role === 'user' ? (
-                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-gray-600" />
-                        </div>
-                      ) : msg.role === 'assistant' ? (
-                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                          <Sparkles className="h-5 w-5 text-white" />
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                          <Bot className="h-5 w-5 text-red-600" />
-                        </div>
-                      )}
+                  <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
+                    <div className="flex-shrink-0 flex flex-col relative items-end">
+                      <div className="w-[30px]">
+                        {msg.role === 'user' ? (
+                          <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-black/10">
+                            <User className="h-4 w-4 text-gray-600" />
+                          </div>
+                        ) : (
+                          <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-green-500">
+                            <Sparkles className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-gray-900 mb-1">
-                        {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'Relay' : 'System'}
-                      </div>
-                      <div className="text-gray-800 leading-relaxed">
-                        {msg.role === 'assistant' ? (
-                          <FormattedContent content={msg.content} />
-                        ) : (
-                          <div className="whitespace-pre-wrap">{msg.content}</div>
-                        )}
+                    <div className="relative flex-1 overflow-hidden">
+                      {msg.role === 'user' ? (
+                        <div className="font-semibold select-none mb-1">You</div>
+                      ) : (
+                        <div className="font-semibold select-none mb-1">Relay</div>
+                      )}
+                      <div className="prose prose-slate dark:prose-invert break-words prose-p:leading-relaxed prose-pre:p-0 min-w-full">
+                        <FormattedContent content={msg.content} />
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
-              
+
               {loading && (
-                <div className="py-6 px-4 bg-gray-50">
-                  <div className="max-w-3xl mx-auto flex gap-4">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="h-5 w-5 text-white" />
+                <div className="w-full text-gray-800 border-b border-black/10 dark:border-gray-900/50 bg-gray-50">
+                  <div className="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-[38rem] xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
+                    <div className="flex-shrink-0 flex flex-col relative items-end">
+                      <div className="w-[30px]">
+                        <div className="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center bg-green-500">
+                          <Sparkles className="h-4 w-4 text-white" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="relative flex-1 overflow-hidden">
+                      <div className="font-semibold select-none mb-1">Relay</div>
+                      <div className="flex items-center gap-1 mt-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
-              <div ref={chatEndRef} />
-            </div>
-          )}
+              <div className="h-32 md:h-48 flex-shrink-0" ref={chatEndRef} />
+            </>
         </div>
 
         {/* Input Area */}
@@ -434,13 +435,13 @@ export default function DashboardPage() {
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {uploadedFiles.map(file => (
-                  <div 
-                    key={file.id} 
+                  <div
+                    key={file.id}
                     className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm"
                   >
                     <FileText className="h-4 w-4 text-gray-500" />
                     <span className="text-gray-700 truncate max-w-[200px]">{file.originalName}</span>
-                    <button 
+                    <button
                       onClick={() => removeUploadedFile(file.id)}
                       className="text-gray-400 hover:text-gray-600"
                     >
@@ -458,7 +459,7 @@ export default function DashboardPage() {
                 className="hidden"
                 onChange={handleFileUpload}
               />
-              
+
               <div className="flex items-end gap-2 border border-gray-300 rounded-2xl bg-white shadow-sm focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent transition-all">
                 <button
                   type="button"
@@ -494,7 +495,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </form>
-            
+
             <p className="text-center text-xs text-gray-400 mt-2">
               AI can make mistakes. Please verify important information.
             </p>

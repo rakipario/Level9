@@ -16,7 +16,7 @@ const { authenticateToken } = require('../utils/auth');
 
 const router = express.Router();
 
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB for regular files
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB for audio files
 

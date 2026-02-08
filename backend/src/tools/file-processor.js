@@ -14,7 +14,7 @@ const pdfParse = require('pdf-parse');
 const Tesseract = require('tesseract.js');
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 // Ensure uploads directory exists
 fs.mkdir(UPLOADS_DIR, { recursive: true }).catch(() => { });
@@ -59,7 +59,7 @@ async function readFile(args, context) {
     // If file_id looks like an original filename and we have context with files,
     // try to find the actual file_id (UUID) from the context
     if (file_id && context.files) {
-        const fileFromContext = context.files.find(f => 
+        const fileFromContext = context.files.find(f =>
             f.originalName === file_id || f.originalName.includes(file_id) || file_id.includes(f.originalName)
         );
         if (fileFromContext) {
