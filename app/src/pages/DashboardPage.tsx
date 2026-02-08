@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
-  Bot, User, Loader2, Menu, Sparkles, Trash2,
+  User, Loader2, Menu, Sparkles, Trash2,
   FileText, X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
