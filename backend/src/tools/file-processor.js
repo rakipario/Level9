@@ -14,38 +14,63 @@ const pdfParse = require('pdf-parse');
 const Tesseract = require('tesseract.js');
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads');
 
 // Ensure uploads directory exists
-fs.mkdir(UPLOADS_DIR, { recursive: true }).catch(() => { });
+fs.mkdir(UPLOADS_DIR, { recursive: true }).then(() => {
+    console.log('File processor uploads directory:', UPLOADS_DIR);
+}).catch(() => { });
 
 /**
  * Resolve file path from ID
  */
 async function resolveFilePath(fileId, userId) {
+    console.log('Resolving file path:', { fileId, userId, UPLOADS_DIR });
+    
     // Try user-specific directory first
     const userDir = path.join(UPLOADS_DIR, userId || 'anonymous');
     const userPath = path.join(userDir, fileId);
+    console.log('Trying user path:', userPath);
 
     try {
         await fs.access(userPath);
+        console.log('Found at user path:', userPath);
         return userPath;
-    } catch { }
+    } catch (err) {
+        console.log('Not found at user path:', err.message);
+    }
 
     // Try direct path (for absolute paths)
     if (path.isAbsolute(fileId)) {
         try {
             await fs.access(fileId);
+            console.log('Found at absolute path:', fileId);
             return fileId;
-        } catch { }
+        } catch (err) {
+            console.log('Not found at absolute path:', err.message);
+        }
     }
 
     // Try uploads root
     const rootPath = path.join(UPLOADS_DIR, fileId);
+    console.log('Trying root path:', rootPath);
     try {
         await fs.access(rootPath);
+        console.log('Found at root path:', rootPath);
         return rootPath;
-    } catch { }
+    } catch (err) {
+        console.log('Not found at root path:', err.message);
+    }
+
+    // List directory contents for debugging
+    try {
+        const files = await fs.readdir(UPLOADS_DIR);
+        console.log('Files in uploads dir:', files);
+        const userFiles = await fs.readdir(userDir).catch(() => []);
+        console.log('Files in user dir:', userFiles);
+    } catch (e) {
+        console.log('Could not list directories:', e.message);
+    }
 
     throw new Error(`File not found: ${fileId}`);
 }
@@ -56,13 +81,21 @@ async function resolveFilePath(fileId, userId) {
 async function readFile(args, context) {
     let { file_id, options = {} } = args;
 
+    console.log('readFile called with:', { file_id, context: { userId: context.userId, hasFiles: !!context.files } });
+
     // If file_id looks like an original filename and we have context with files,
     // try to find the actual file_id (UUID) from the context
-    if (file_id && context.files) {
-        const fileFromContext = context.files.find(f =>
-            f.originalName === file_id || f.originalName.includes(file_id) || file_id.includes(f.originalName)
+    const files = context.files || context.context?.files;
+    if (file_id && files) {
+        console.log('Looking for file in context:', files);
+        const fileFromContext = files.find(f =>
+            f.originalName === file_id || 
+            f.originalName.includes(file_id) || 
+            file_id.includes(f.originalName) ||
+            file_id.includes(f.id)
         );
         if (fileFromContext) {
+            console.log('Found file in context:', fileFromContext);
             file_id = fileFromContext.id;
         }
     }

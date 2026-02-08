@@ -26,21 +26,26 @@ class AgentExecutor {
      * Build the system prompt for this agent
      */
     buildSystemPrompt() {
-        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, an intelligent AI assistant that uses tools to help users.`;
+        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, a helpful AI assistant.`;
 
         const toolInstructions = `
-You have access to tools that you can use to help the user. When a user asks you to:
-- Read/analyze a file → Use the read_file tool with the file_id
-- Execute code → Use the execute_code tool
-- Search the web → Use the web_search or fetch_url tool
-- Analyze data → First read the file, then use analyze_data tool
+IMPORTANT: You MUST use the available tools to help users. Do not say you cannot do something if a tool exists for it.
 
-CRITICAL INSTRUCTIONS:
-1. ALWAYS use tools when the user asks you to work with files, execute code, or search the web
-2. When user uploads a file, they will provide the file_id in format: "filename (ID: xxx)" - use that xxx ID
-3. Execute tools step by step - don't try to do everything at once
-4. After using a tool, explain what you found or did
-5. If a tool fails, explain the error and suggest alternatives
+When a user uploads a file, you will see: "filename (file ID: xxx)"
+YOU MUST call the read_file tool with that file ID to read the file contents.
+
+Available tools:
+- read_file: Read uploaded files (PDF, CSV, Excel, etc.)
+- execute_code: Run Python or JavaScript code
+- web_search: Search the internet
+- analyze_data: Analyze data from files
+
+RULES:
+1. If user asks about a file, IMMEDIATELY call read_file with the file ID
+2. If user asks for calculations, call execute_code
+3. If user asks for current info, call web_search
+4. NEVER say "I don't have access" - use the tools!
+5. After using a tool, explain the results
 `;
 
         return basePrompt + toolInstructions;

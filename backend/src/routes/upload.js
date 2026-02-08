@@ -16,7 +16,7 @@ const { authenticateToken } = require('../utils/auth');
 
 const router = express.Router();
 
-const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads');
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB for regular files
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB for audio files
 
@@ -28,12 +28,20 @@ const ALLOWED_TYPES = {
 };
 
 // Ensure uploads directory exists
-fs.mkdir(UPLOADS_DIR, { recursive: true }).catch(() => { });
+async function ensureUploadsDir() {
+    try {
+        await fs.mkdir(UPLOADS_DIR, { recursive: true });
+        console.log('Uploads directory ready:', UPLOADS_DIR);
+    } catch (err) {
+        console.error('Failed to create uploads directory:', err);
+    }
+}
+ensureUploadsDir();
 
 // Configure multer
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
-        const userId = req.user?.id || 'anonymous';
+        const userId = req.user?.userId || req.user?.id || 'anonymous';
         const userDir = path.join(UPLOADS_DIR, userId);
         await fs.mkdir(userDir, { recursive: true }).catch(() => { });
         cb(null, userDir);
@@ -85,6 +93,12 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
             });
         }
 
+        console.log('File uploaded successfully:', {
+            id: req.file.filename,
+            path: req.file.path,
+            uploadsDir: UPLOADS_DIR
+        });
+
         res.json({
             success: true,
             file: {
@@ -92,8 +106,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
                 originalName: req.file.originalname,
                 size: req.file.size,
                 type: ext.slice(1),
-                isAudio,
-                path: req.file.path
+                isAudio
             }
         });
     } catch (error) {
@@ -153,7 +166,7 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
  */
 router.get('/files', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user?.id || 'anonymous';
+        const userId = req.user?.userId || req.user?.id || 'anonymous';
         const userDir = path.join(UPLOADS_DIR, userId);
 
         try {
@@ -189,7 +202,7 @@ router.get('/files', authenticateToken, async (req, res) => {
  */
 router.delete('/files/:fileId', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user?.id || 'anonymous';
+        const userId = req.user?.userId || req.user?.id || 'anonymous';
         const filePath = path.join(UPLOADS_DIR, userId, req.params.fileId);
 
         await fs.unlink(filePath);
