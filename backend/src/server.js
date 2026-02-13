@@ -31,16 +31,23 @@ const widgetRoutes = require('./routes/widget');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const path = require('path');
 
 // Configure for Railway/Heroku proxies
 app.set('trust proxy', 1);
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Loosen for generated site previews
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+
+// Static files for generated sites
+app.use('/sites', express.static(path.join(__dirname, '..', 'generated-sites')));
 
 // Rate limiting
 const limiter = rateLimit({

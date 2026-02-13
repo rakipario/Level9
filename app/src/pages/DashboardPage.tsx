@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Paperclip,
   Loader2, Menu, Sparkles, Trash2, FileText, X,
-  ArrowUp, Globe, Code, BarChart3
+  ArrowUp, Globe, Code, BarChart3, Layout, Eye, Zap, Image as ImageIcon
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -42,6 +42,8 @@ const toolDisplayNames: Record<string, { label: string; icon: string }> = {
   analyze_data: { label: 'Analyzing data', icon: '📊' },
   list_uploaded_files: { label: 'Listing files', icon: '📂' },
   transcribe_audio: { label: 'Transcribing audio', icon: '🎙️' },
+  analyze_image: { label: 'Analyzing image', icon: '👁️' },
+  generate_website: { label: 'Building website', icon: '🌐' },
 };
 
 export default function DashboardPage() {
@@ -56,6 +58,7 @@ export default function DashboardPage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
   const [streamingContent, setStreamingContent] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -144,31 +147,38 @@ export default function DashboardPage() {
     setSidebarOpen(false);
     setStreamingContent('');
     setActiveTools([]);
+    setPreviewUrl(null);
   };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
     setIsUploading(true);
+    const newUploadedFiles: UploadedFile[] = [];
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/upload/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
 
-      if (response.ok) {
-        const data = await response.json();
-        setUploadedFiles(prev => [...prev, data.file]);
-      } else {
-        const errorData = await response.json();
-        alert(`Upload failed: ${errorData.error || 'Unknown error'}`);
+        const response = await fetch(`${API_URL}/upload/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          newUploadedFiles.push(data.file);
+        } else {
+          const errorData = await response.json();
+          alert(`Upload failed for ${file.name}: ${errorData.error || 'Unknown error'}`);
+        }
       }
+      setUploadedFiles(prev => [...prev, ...newUploadedFiles]);
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Failed to upload file. Please try again.');
@@ -206,6 +216,7 @@ export default function DashboardPage() {
     setLoading(true);
     setStreamingContent('');
     setActiveTools([]);
+    setPreviewUrl(null);
 
     try {
       const token = localStorage.getItem('token');
@@ -248,6 +259,10 @@ export default function DashboardPage() {
 
           try {
             const event = JSON.parse(jsonStr);
+
+            if (event.type === 'tool_result' && event.tool === 'generate_website' && event.result?.url) {
+              setPreviewUrl(`${API_URL.replace('/api', '')}${event.result.url}`);
+            }
 
             switch (event.type) {
               case 'content':
@@ -356,10 +371,12 @@ export default function DashboardPage() {
   };
 
   const capabilities = [
-    { icon: FileText, label: 'Analyze files', desc: 'PDF, CSV, Excel, images' },
-    { icon: Globe, label: 'Search the web', desc: 'Real-time information' },
-    { icon: Code, label: 'Execute code', desc: 'Python, JavaScript' },
-    { icon: BarChart3, label: 'Data analysis', desc: 'Stats & visualizations' },
+    { icon: FileText, label: 'Analyze files', desc: 'Extract data from PDF, CSV & Excel', prompt: 'Summarize the contents of my uploaded file.' },
+    { icon: Globe, label: 'Search the web', desc: 'Find latest information & news', prompt: 'What are the latest developments in AI agents this week?' },
+    { icon: Layout, label: 'Build websites', desc: 'Generate & host HTML sites', prompt: 'Create a modern landing page for a coffee shop called "Relay Brew".' },
+    { icon: ImageIcon, label: 'Vision analysis', desc: 'Understand & describe images', prompt: 'What is happening in this image? (Upload an image first)' },
+    { icon: BarChart3, label: 'Data processing', desc: 'Complex stats & visualizations', prompt: 'Analyze this data and give me insights.' },
+    { icon: Zap, label: 'Code execution', desc: 'Run Python/JS for calculations', prompt: 'Write and run a script to calculate the first 50 prime numbers.' },
   ];
 
   return (
@@ -384,8 +401,8 @@ export default function DashboardPage() {
               key={conv.id}
               onClick={() => loadConversation(conv.id)}
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-sm ${currentConversationId === conv.id
-                  ? 'bg-white shadow-sm text-[var(--text)]'
-                  : 'text-[var(--text-secondary)] hover:bg-white/60'
+                ? 'bg-white shadow-sm text-[var(--text)]'
+                : 'text-[var(--text-secondary)] hover:bg-white/60'
                 }`}
             >
               <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-50" />
@@ -461,16 +478,16 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl w-full">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl w-full">
                 {capabilities.map((cap, i) => (
                   <button
                     key={i}
-                    onClick={() => setInputValue(cap.label)}
+                    onClick={() => setInputValue(cap.prompt)}
                     className="p-4 text-left bg-[var(--bg-subtle)] hover:bg-[var(--border)]/50 border border-[var(--border)] rounded-xl transition-all hover:shadow-sm group"
                   >
                     <cap.icon className="h-5 w-5 text-[var(--text-secondary)] mb-2.5 group-hover:text-[var(--text)] transition-colors" />
                     <div className="text-[13px] font-medium text-[var(--text)]">{cap.label}</div>
-                    <div className="text-[12px] text-[var(--text-tertiary)] mt-0.5">{cap.desc}</div>
+                    <div className="text-[12px] text-[var(--text-tertiary)] mt-0.5 line-clamp-1">{cap.desc}</div>
                   </button>
                 ))}
               </div>
@@ -531,10 +548,10 @@ export default function DashboardPage() {
                           <div
                             key={i}
                             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] transition-all ${tool.status === 'running'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : tool.status === 'done'
-                                  ? 'bg-green-50 text-green-700 border border-green-200'
-                                  : 'bg-red-50 text-red-700 border border-red-200'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : tool.status === 'done'
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'bg-red-50 text-red-700 border border-red-200'
                               }`}
                           >
                             <span>{display.icon}</span>
@@ -601,29 +618,24 @@ export default function DashboardPage() {
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {uploadedFiles.map(file => (
-                  <div
-                    key={file.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg text-sm"
-                  >
-                    <FileText className="h-4 w-4 text-[var(--text-secondary)]" />
-                    <span className="text-[var(--text)] truncate max-w-[200px]">{file.originalName}</span>
-                    <button
-                      onClick={() => removeUploadedFile(file.id)}
-                      className="text-[var(--text-tertiary)] hover:text-[var(--text)]"
-                    >
-                      <X className="h-3.5 w-3.5" />
+                  <div key={file.id} className="flex items-center gap-2 px-2 py-1 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)]">
+                    <Paperclip className="h-3 w-3" />
+                    <span className="max-w-[150px] truncate">{file.originalName}</span>
+                    <button onClick={() => setUploadedFiles(prev => prev.filter(f => f.id !== file.id))} className="hover:text-red-500">
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            <form onSubmit={handleSendMessage}>
+            <form onSubmit={handleSendMessage} className="relative">
               <input
                 type="file"
                 ref={fileInputRef}
-                className="hidden"
                 onChange={handleFileUpload}
+                className="hidden"
+                multiple
               />
 
               <div className="relative flex items-end gap-2 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-2xl shadow-sm focus-within:border-[var(--text-tertiary)] focus-within:shadow-md transition-all">
@@ -672,6 +684,35 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Split View Panel */}
+      {previewUrl && (
+        <div className="w-[450px] border-l border-[var(--border)] bg-white flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg-subtle)]">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-white border border-[var(--border)] rounded-lg">
+                <Layout className="h-4 w-4 text-[var(--text)]" />
+              </div>
+              <span className="text-[14px] font-medium text-[var(--text)]">Preview</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-[var(--text-secondary)] hover:bg-white rounded-lg transition-colors">
+                <Eye className="h-4 w-4" />
+              </a>
+              <button onClick={() => setPreviewUrl(null)} className="p-2 text-[var(--text-secondary)] hover:bg-white rounded-lg transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 bg-[var(--bg-subtle)] p-2 text-center">
+            <iframe
+              src={previewUrl}
+              className="w-full h-full bg-white rounded-xl border border-[var(--border)] shadow-sm"
+              title="Site Preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

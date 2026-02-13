@@ -82,12 +82,32 @@ print(_result)
 
         await fs.writeFile(scriptPath, wrappedCode, 'utf8');
 
+        // Check for available python binary
+        const getPythonBinary = async () => {
+            const binaries = ['python3', 'python'];
+            const { execSync } = require('child_process');
+            for (const bin of binaries) {
+                try {
+                    execSync(`${bin} --version`, { stdio: 'ignore' });
+                    return bin;
+                } catch (e) {
+                    continue;
+                }
+            }
+            return null;
+        };
+
+        const pythonBin = await getPythonBinary();
+        if (!pythonBin) {
+            throw new Error('Python is not installed on this system. Please use language="javascript" for code execution instead.');
+        }
+
         // Execute Python
         const result = await new Promise((resolve, reject) => {
             let stdout = '';
             let stderr = '';
 
-            const proc = spawn('python3', [scriptPath], {
+            const proc = spawn(pythonBin, [scriptPath], {
                 cwd: tempDir,
                 timeout: EXECUTION_TIMEOUT,
                 env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
@@ -114,7 +134,7 @@ print(_result)
             });
 
             proc.on('error', (err) => {
-                reject(new Error(`Failed to execute Python: ${err.message}`));
+                reject(new Error(`Failed to execute Python (${pythonBin}): ${err.message}`));
             });
 
             // Timeout handling

@@ -55,7 +55,7 @@ RULES:
      * Get available tools based on agent config and integrations
      */
     getAvailableTools() {
-        const enabledTools = this.agentConfig.tools || ['execute_code', 'analyze_data', 'read_file', 'web_search', 'fetch_url', 'list_uploaded_files', 'transcribe_audio'];
+        const enabledTools = this.agentConfig.tools || ['execute_code', 'analyze_data', 'read_file', 'web_search', 'fetch_url', 'list_uploaded_files', 'transcribe_audio', 'analyze_image', 'generate_website'];
         return getToolDefinitions(enabledTools, this.userIntegrations);
     }
 

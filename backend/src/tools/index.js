@@ -9,6 +9,8 @@ const codeExecutor = require('./code-executor');
 const fileProcessor = require('./file-processor');
 const webTool = require('./web');
 const speechTool = require('./speech');
+const visionTool = require('./vision');
+const websiteBuilder = require('./website-builder');
 
 // Registry of available tools (OAuth integrations disabled)
 const TOOL_REGISTRY = {
@@ -203,6 +205,68 @@ const TOOL_REGISTRY = {
                         }
                     },
                     required: ['file_id']
+                }
+            }
+        }
+    },
+
+    analyze_image: {
+        module: visionTool,
+        handler: 'analyzeImage',
+        requiresIntegration: false,
+        definition: {
+            type: 'function',
+            function: {
+                name: 'analyze_image',
+                description: 'Analyze an image or a PDF page as an image using AI vision. Can describe scenes, extract text, analyze charts, and identify objects.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        file_id: {
+                            type: 'string',
+                            description: 'The ID of the image file to analyze.'
+                        },
+                        prompt: {
+                            type: 'string',
+                            description: 'Optional specific question or prompt about the image.'
+                        }
+                    },
+                    required: ['file_id']
+                }
+            }
+        }
+    },
+
+    generate_website: {
+        module: websiteBuilder,
+        handler: 'generateWebsite',
+        requiresIntegration: false,
+        definition: {
+            type: 'function',
+            function: {
+                name: 'generate_website',
+                description: 'Generate a complete HTML/CSS website from a description. Creates and hosts the site, returning a live URL.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        html: {
+                            type: 'string',
+                            description: 'The inner HTML content of the body.'
+                        },
+                        css: {
+                            type: 'string',
+                            description: 'CSS styles for the website.'
+                        },
+                        javascript: {
+                            type: 'string',
+                            description: 'Optional JavaScript for interactivity.'
+                        },
+                        title: {
+                            type: 'string',
+                            description: 'Title of the website.'
+                        }
+                    },
+                    required: ['html', 'css']
                 }
             }
         }
