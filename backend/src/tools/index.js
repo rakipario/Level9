@@ -11,6 +11,7 @@ const webTool = require('./web');
 const speechTool = require('./speech');
 const visionTool = require('./vision');
 const websiteBuilder = require('./website-builder');
+const converterTool = require('./converter');
 
 // Registry of available tools (OAuth integrations disabled)
 const TOOL_REGISTRY = {
@@ -22,13 +23,13 @@ const TOOL_REGISTRY = {
             type: 'function',
             function: {
                 name: 'execute_code',
-                description: 'Execute Python or JavaScript code for data analysis, calculations, or generating visualizations. Returns the output of the code execution.',
+                description: 'CRITICAL: Execute Python or JavaScript code yourself to solve problems. Use this for ANY calculations, data processing, or file creation tasks. Never just give the code to the user—RUN IT yourself.',
                 parameters: {
                     type: 'object',
                     properties: {
                         code: {
                             type: 'string',
-                            description: 'The code to execute. For Python, you can use pandas, numpy, matplotlib, and other common data libraries.'
+                            description: 'The code to execute. For Python, you can use pandas, numpy, matplotlib, python-docx, and other common libraries.'
                         },
                         language: {
                             type: 'string',
@@ -245,7 +246,7 @@ const TOOL_REGISTRY = {
             type: 'function',
             function: {
                 name: 'generate_website',
-                description: 'Generate a complete HTML/CSS website from a description. Creates and hosts the site, returning a live URL.',
+                description: 'CRITICAL: Build and host a live website from a description. Use this whenever the user asks for a website, landing page, or UI design. This tool returns a LIVE URL that the user can see.',
                 parameters: {
                     type: 'object',
                     properties: {
@@ -267,6 +268,34 @@ const TOOL_REGISTRY = {
                         }
                     },
                     required: ['html', 'css']
+                }
+            }
+        }
+    },
+
+    convert_file: {
+        module: converterTool,
+        handler: 'convertFile',
+        requiresIntegration: false,
+        definition: {
+            type: 'function',
+            function: {
+                name: 'convert_file',
+                description: 'Convert a file from one format to another (e.g., PDF to DOCX, CSV to Excel, Text extraction). Output is saved to the user storage.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        file_id: {
+                            type: 'string',
+                            description: 'The ID of the file to convert.'
+                        },
+                        target_format: {
+                            type: 'string',
+                            enum: ['docx', 'xlsx', 'csv', 'txt', 'pdf', 'json'],
+                            description: 'The format to convert to.'
+                        }
+                    },
+                    required: ['file_id', 'target_format']
                 }
             }
         }

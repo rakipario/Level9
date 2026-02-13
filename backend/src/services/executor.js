@@ -13,6 +13,9 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
+// Import getAllTools for description generation
+const { getToolDefinitions, executeTool, getAllTools } = require('../tools');
+
 class AgentExecutor {
     constructor(agentConfig, userIntegrations = []) {
         this.agentConfig = agentConfig;
@@ -26,36 +29,50 @@ class AgentExecutor {
      * Build the system prompt for this agent
      */
     buildSystemPrompt() {
-        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, a helpful AI assistant.`;
+        const basePrompt = this.agentConfig.systemPrompt || `You are ${this.agentConfig.name || 'Relay'}, a powerful and proactive AI agent. Your mission is to help users by using your tools effectively.`;
+
+        const tools = this.getAllAvailableToolsInfo();
+        const toolList = tools.map(t => `- ${t.name}: ${t.description}`).join('\n');
 
         const toolInstructions = `
-IMPORTANT: You MUST use the available tools to help users. Do not say you cannot do something if a tool exists for it.
+### YOUR CAPABILITIES
+You have access to a sophisticated suite of tools. DO NOT state you cannot perform a task if an appropriate tool exists.
 
-When a user uploads a file, you will see: "filename (file ID: xxx)"
-YOU MUST call the read_file tool with that file ID to read the file contents.
+**AVAILABLE TOOLS:**
+${toolList}
 
-Available tools:
-- read_file: Read uploaded files (PDF, CSV, Excel, etc.)
-- execute_code: Run Python or JavaScript code
-- web_search: Search the internet
-- analyze_data: Analyze data from files
+### AGENTIC PRINCIPLES
+1. **Prefer Action Over Refusal**: If a user asks for something complex (like file conversion or website creation), use your tools immediately. 
+2. **File Conversion**: If asked to convert a file format (e.g., PDF to DOCX, CSV to JSON):
+   - Use 'read_file' to get the content.
+   - Use 'execute_code' (Python) to generate the new file format if no direct tool exists.
+3. **Website Creation**: Use 'generate_website' for ANY request to build, create, or design a website. Return the live URL to the user.
+4. **Visual Data**: For any images or charts, ALWAYS use 'analyze_image'.
+5. **No Placeholders**: Never say "I can provide the code for you to run". RUN THE CODE YOURSELF using 'execute_code'.
 
-RULES:
-1. If user asks about a file, IMMEDIATELY call read_file with the file ID
-2. If user asks for calculations, call execute_code
-3. If user asks for current info, call web_search
-4. NEVER say "I don't have access" - use the tools!
-5. After using a tool, explain the results
+### LOGISTICS
+- When users upload files, you see: "file_name (file ID: uuid)"
+- Access files using their UUIDs specifically.
+- After using a tool, synthesize the results and explain what you did.
 `;
 
         return basePrompt + toolInstructions;
     }
 
     /**
+     * Helper to get simple names and descriptions for prompt
+     */
+    getAllAvailableToolsInfo() {
+        const enabledTools = this.agentConfig.tools || ['execute_code', 'analyze_data', 'read_file', 'web_search', 'fetch_url', 'list_uploaded_files', 'transcribe_audio', 'analyze_image', 'generate_website', 'convert_file'];
+        const allTools = getAllTools();
+        return allTools.filter(t => enabledTools.includes(t.name) || enabledTools.includes('all'));
+    }
+
+    /**
      * Get available tools based on agent config and integrations
      */
     getAvailableTools() {
-        const enabledTools = this.agentConfig.tools || ['execute_code', 'analyze_data', 'read_file', 'web_search', 'fetch_url', 'list_uploaded_files', 'transcribe_audio', 'analyze_image', 'generate_website'];
+        const enabledTools = this.agentConfig.tools || ['execute_code', 'analyze_data', 'read_file', 'web_search', 'fetch_url', 'list_uploaded_files', 'transcribe_audio', 'analyze_image', 'generate_website', 'convert_file'];
         return getToolDefinitions(enabledTools, this.userIntegrations);
     }
 

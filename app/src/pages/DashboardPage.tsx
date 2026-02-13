@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Paperclip,
   Loader2, Menu, Sparkles, Trash2, FileText, X,
-  ArrowUp, Globe, BarChart3, Layout, Eye, Zap, Image as ImageIcon
+  ArrowUp, Globe, Layout, Eye, Zap, Image as ImageIcon
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -44,6 +44,7 @@ const toolDisplayNames: Record<string, { label: string; icon: string }> = {
   transcribe_audio: { label: 'Transcribing audio', icon: '🎙️' },
   analyze_image: { label: 'Analyzing image', icon: '👁️' },
   generate_website: { label: 'Building website', icon: '🌐' },
+  convert_file: { label: 'Converting file', icon: '🔄' },
 };
 
 export default function DashboardPage() {
@@ -370,10 +371,10 @@ export default function DashboardPage() {
 
   const capabilities = [
     { icon: FileText, label: 'Analyze files', desc: 'Extract data from PDF, CSV & Excel', prompt: 'Summarize the contents of my uploaded file.' },
+    { icon: ArrowUp, label: 'Convert files', desc: 'PDF to Word, CSV to Excel', prompt: 'Convert my uploaded PDF into a DOCX file.' },
     { icon: Globe, label: 'Search the web', desc: 'Find latest information & news', prompt: 'What are the latest developments in AI agents this week?' },
     { icon: Layout, label: 'Build websites', desc: 'Generate & host HTML sites', prompt: 'Create a modern landing page for a coffee shop called "Relay Brew".' },
     { icon: ImageIcon, label: 'Vision analysis', desc: 'Understand & describe images', prompt: 'What is happening in this image? (Upload an image first)' },
-    { icon: BarChart3, label: 'Data processing', desc: 'Complex stats & visualizations', prompt: 'Analyze this data and give me insights.' },
     { icon: Zap, label: 'Code execution', desc: 'Run Python/JS for calculations', prompt: 'Write and run a script to calculate the first 50 prime numbers.' },
   ];
 
