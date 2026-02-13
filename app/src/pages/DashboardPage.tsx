@@ -3,7 +3,8 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
-  User, Loader2, Menu, Sparkles, Trash2, FileText, X
+  Loader2, Menu, Sparkles, Trash2, FileText, X,
+  Search, Code, Globe, Mic, BarChart3, ArrowUp
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,13 +29,20 @@ interface UploadedFile {
   originalName: string;
 }
 
-function formatTime(dateStr: string) {
-  try {
-    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
+interface ToolStatus {
+  name: string;
+  status: 'running' | 'done' | 'error';
 }
+
+const toolDisplayNames: Record<string, { label: string; icon: string }> = {
+  web_search: { label: 'Searching the web', icon: '🔍' },
+  fetch_url: { label: 'Fetching URL', icon: '🌐' },
+  read_file: { label: 'Reading file', icon: '📄' },
+  execute_code: { label: 'Running code', icon: '⚡' },
+  analyze_data: { label: 'Analyzing data', icon: '📊' },
+  list_uploaded_files: { label: 'Listing files', icon: '📂' },
+  transcribe_audio: { label: 'Transcribing audio', icon: '🎙️' },
+};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -46,14 +54,16 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  
+  const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
+  const [streamingContent, setStreamingContent] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, streamingContent]);
 
   useEffect(() => {
     fetchConversations();
@@ -132,6 +142,8 @@ export default function DashboardPage() {
     setCurrentConversationId(null);
     setUploadedFiles([]);
     setSidebarOpen(false);
+    setStreamingContent('');
+    setActiveTools([]);
   };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +188,7 @@ export default function DashboardPage() {
 
     let messageContent = inputValue;
     if (uploadedFiles.length > 0) {
-      messageContent += '\n\n[Attached files:\n' + 
+      messageContent += '\n\n[Attached files:\n' +
         uploadedFiles.map(f => `- ${f.originalName} (file ID: ${f.id})`).join('\n') +
         ']\n\nWhen reading files, use the file_id shown above.';
     }
@@ -192,10 +204,12 @@ export default function DashboardPage() {
     setInputValue('');
     setUploadedFiles([]);
     setLoading(true);
+    setStreamingContent('');
+    setActiveTools([]);
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/ai/chat`, {
+      const response = await fetch(`${API_URL}/ai/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,31 +222,131 @@ export default function DashboardPage() {
         })
       });
 
-      const data = await response.json();
-
-      const assistantMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: data.response || "I'm not sure how to respond to that.",
-        createdAt: new Date().toISOString()
-      };
-
-      if (data.conversationId && !currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-        fetchConversations();
+      if (!response.ok) {
+        throw new Error('Stream request failed');
       }
 
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulatedContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const event = JSON.parse(jsonStr);
+
+            switch (event.type) {
+              case 'content':
+                accumulatedContent += event.content;
+                setStreamingContent(accumulatedContent);
+                break;
+
+              case 'tool_start':
+                setActiveTools(
+                  (event.tools || []).map((t: string) => ({ name: t, status: 'running' as const }))
+                );
+                break;
+
+              case 'tool_result':
+                setActiveTools(prev =>
+                  prev.map(t =>
+                    t.name === event.tool ? { ...t, status: 'done' as const } : t
+                  )
+                );
+                break;
+
+              case 'complete':
+                accumulatedContent = event.response || accumulatedContent;
+                break;
+
+              case 'done':
+                if (event.conversationId) {
+                  setCurrentConversationId(event.conversationId);
+                  fetchConversations();
+                }
+                break;
+
+              case 'error':
+                console.error('Stream error:', event.error);
+                if (!accumulatedContent) {
+                  accumulatedContent = `Sorry, something went wrong: ${event.error}`;
+                }
+                break;
+            }
+          } catch (parseErr) {
+            // skip malformed JSON
+          }
+        }
+      }
+
+      // Add the final assistant message
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: accumulatedContent || "I'm not sure how to respond to that.",
+        createdAt: new Date().toISOString()
+      };
       setMessages(prev => [...prev, assistantMessage]);
+
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'system',
-        content: 'Failed to send message. Please try again.',
-        createdAt: new Date().toISOString()
-      }]);
+
+      // Fallback to non-streaming endpoint
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: userMessage.content,
+            conversationId: currentConversationId,
+            context: { files: uploadedFiles }
+          })
+        });
+
+        const data = await response.json();
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response || "I'm not sure how to respond to that.",
+          createdAt: new Date().toISOString()
+        };
+
+        if (data.conversationId && !currentConversationId) {
+          setCurrentConversationId(data.conversationId);
+          fetchConversations();
+        }
+
+        setMessages(prev => [...prev, assistantMessage]);
+      } catch (fallbackError) {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'system',
+          content: 'Failed to send message. Please try again.',
+          createdAt: new Date().toISOString()
+        }]);
+      }
     } finally {
       setLoading(false);
+      setStreamingContent('');
+      setActiveTools([]);
     }
   };
 
@@ -241,15 +355,22 @@ export default function DashboardPage() {
     navigate('/');
   };
 
+  const capabilities = [
+    { icon: FileText, label: 'Analyze files', desc: 'PDF, CSV, Excel, images' },
+    { icon: Globe, label: 'Search the web', desc: 'Real-time information' },
+    { icon: Code, label: 'Execute code', desc: 'Python, JavaScript' },
+    { icon: BarChart3, label: 'Data analysis', desc: 'Stats & visualizations' },
+  ];
+
   return (
-    <div className="h-screen flex bg-[#343541]">
+    <div className="h-screen flex bg-white">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-[260px] bg-[#202123] transition-transform duration-300 md:relative md:translate-x-0 flex flex-col`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-[260px] bg-[var(--bg-subtle)] border-r border-[var(--border)] transition-transform duration-300 md:relative md:translate-x-0 flex flex-col`}>
         {/* New Chat Button */}
         <div className="p-3">
           <button
             onClick={startNewChat}
-            className="flex items-center gap-3 w-full px-3 py-3 text-sm text-white border border-white/20 rounded-md hover:bg-white/5 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-3 text-sm text-[var(--text)] border border-[var(--border)] rounded-xl hover:bg-white transition-colors"
           >
             <Plus className="h-4 w-4" />
             New chat
@@ -257,38 +378,37 @@ export default function DashboardPage() {
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-1">
+        <div className="flex-1 overflow-y-auto px-3 space-y-0.5">
           {conversations.map(conv => (
             <div
               key={conv.id}
               onClick={() => loadConversation(conv.id)}
-              className={`group flex items-center gap-3 px-3 py-3 rounded-md cursor-pointer transition-colors text-sm ${
-                currentConversationId === conv.id 
-                  ? 'bg-[#343541] text-white' 
-                  : 'text-gray-300 hover:bg-[#343541]/50'
-              }`}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-sm ${currentConversationId === conv.id
+                  ? 'bg-white shadow-sm text-[var(--text)]'
+                  : 'text-[var(--text-secondary)] hover:bg-white/60'
+                }`}
             >
-              <MessageSquare className="h-4 w-4 flex-shrink-0" />
+              <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-50" />
               <span className="truncate flex-1">{conv.title || 'New conversation'}</span>
               <button
                 onClick={(e) => deleteConversation(conv.id, e)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-white text-gray-400 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 text-[var(--text-tertiary)] transition-all"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-white/10 space-y-1">
-          <button className="flex items-center gap-3 px-3 py-3 text-sm text-gray-300 hover:bg-[#343541] rounded-md w-full transition-colors">
+        <div className="p-3 border-t border-[var(--border)] space-y-0.5">
+          <button className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-white rounded-xl w-full transition-colors">
             <Settings className="h-4 w-4" />
             Settings
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-3 text-sm text-gray-300 hover:bg-[#343541] rounded-md w-full transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-white rounded-xl w-full transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Log out
@@ -298,93 +418,94 @@ export default function DashboardPage() {
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        <div
+          className="fixed inset-0 bg-black/20 z-40 md:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-[#343541] relative">
+      <div className="flex-1 flex flex-col relative">
         {/* Header */}
-        <div className="h-14 flex items-center justify-between px-4 border-b border-white/10">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--border)]">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2 text-gray-300 hover:text-white"
+            className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text)]"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </button>
-          
-          <div className="flex items-center gap-2 text-white font-semibold">
-            <Sparkles className="h-5 w-5" />
+
+          <div className="flex items-center gap-2 text-[var(--text)] font-medium text-[15px]">
+            <div className="h-7 w-7 rounded-lg bg-[var(--text)] flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
             Relay
           </div>
-          
+
           <div className="w-10" />
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !loading ? (
             <div className="h-full flex flex-col items-center justify-center px-4 text-center">
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-white" />
+              <div className="mb-8">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-[var(--text)] flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-white" />
                 </div>
-                <h1 className="text-3xl font-semibold text-white mb-2">
+                <h1 className="text-2xl font-semibold text-[var(--text)] mb-2">
                   How can I help you today?
                 </h1>
+                <p className="text-[15px] text-[var(--text-secondary)] max-w-md">
+                  I can analyze files, search the web, execute code, and answer your questions.
+                </p>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
-                {[
-                  { title: 'Analyze a document', desc: 'Upload and analyze files' },
-                  { title: 'Search the web', desc: 'Find current information' },
-                  { title: 'Write code', desc: 'Python, JavaScript, etc.' },
-                  { title: 'Explain a topic', desc: 'Learn something new' },
-                ].map((item, i) => (
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl w-full">
+                {capabilities.map((cap, i) => (
                   <button
                     key={i}
-                    onClick={() => setInputValue(item.title)}
-                    className="p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+                    onClick={() => setInputValue(cap.label)}
+                    className="p-4 text-left bg-[var(--bg-subtle)] hover:bg-[var(--border)]/50 border border-[var(--border)] rounded-xl transition-all hover:shadow-sm group"
                   >
-                    <div className="font-medium text-white">{item.title}</div>
-                    <div className="text-sm text-gray-400">{item.desc}</div>
+                    <cap.icon className="h-5 w-5 text-[var(--text-secondary)] mb-2.5 group-hover:text-[var(--text)] transition-colors" />
+                    <div className="text-[13px] font-medium text-[var(--text)]">{cap.label}</div>
+                    <div className="text-[12px] text-[var(--text-tertiary)] mt-0.5">{cap.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="w-full max-w-3xl mx-auto">
+            <div className="w-full max-w-3xl mx-auto py-6">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`py-6 px-4 ${msg.role === 'assistant' ? 'bg-[#444654]' : 'bg-[#343541]'}`}
+                  className="px-4 mb-6"
                 >
-                  <div className="max-w-3xl mx-auto flex gap-4">
+                  <div className="flex gap-3">
                     {/* Avatar */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-sm flex items-center justify-center">
+                    <div className="flex-shrink-0 mt-0.5">
                       {msg.role === 'user' ? (
-                        <div className="w-8 h-8 bg-[#10a37f] rounded-sm flex items-center justify-center">
-                          <User className="h-5 w-5 text-white" />
+                        <div className="w-7 h-7 bg-[var(--text)] rounded-lg flex items-center justify-center">
+                          <span className="text-white text-xs font-medium">U</span>
                         </div>
                       ) : msg.role === 'assistant' ? (
-                        <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
-                          <Sparkles className="h-5 w-5 text-[#343541]" />
+                        <div className="w-7 h-7 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg flex items-center justify-center">
+                          <Sparkles className="h-3.5 w-3.5 text-[var(--text)]" />
                         </div>
                       ) : (
-                        <div className="w-8 h-8 bg-red-500 rounded-sm flex items-center justify-center">
-                          <span className="text-white text-xs">!</span>
+                        <div className="w-7 h-7 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
+                          <span className="text-red-500 text-xs font-medium">!</span>
                         </div>
                       )}
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-200 mb-1">
-                        {msg.role === 'user' ? 'You' : 'Relay'}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="text-[13px] font-medium text-[var(--text)] mb-1">
+                        {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'Relay' : 'System'}
                       </div>
-                      <div className="text-[#ececf1] leading-relaxed prose prose-invert max-w-none">
+                      <div className="text-[15px] text-[var(--text)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text)] prose-p:text-[var(--text)] prose-code:bg-[var(--bg-subtle)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[14px] prose-pre:bg-[var(--bg-subtle)] prose-pre:border prose-pre:border-[var(--border)] prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
                         {msg.role === 'assistant' ? (
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {msg.content}
@@ -397,17 +518,73 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-              
-              {loading && (
-                <div className="py-6 px-4 bg-[#444654]">
-                  <div className="max-w-3xl mx-auto flex gap-4">
-                    <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="h-5 w-5 text-[#343541]" />
+
+              {/* Tool execution indicators */}
+              {activeTools.length > 0 && (
+                <div className="px-4 mb-4">
+                  <div className="flex gap-3">
+                    <div className="w-7 h-7 flex-shrink-0" />
+                    <div className="flex flex-wrap gap-2">
+                      {activeTools.map((tool, i) => {
+                        const display = toolDisplayNames[tool.name] || { label: tool.name, icon: '⚙️' };
+                        return (
+                          <div
+                            key={i}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] transition-all ${tool.status === 'running'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : tool.status === 'done'
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : 'bg-red-50 text-red-700 border border-red-200'
+                              }`}
+                          >
+                            <span>{display.icon}</span>
+                            <span>{display.label}</span>
+                            {tool.status === 'running' && (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  </div>
+                </div>
+              )}
+
+              {/* Streaming content */}
+              {streamingContent && (
+                <div className="px-4 mb-6">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-[var(--text)]" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="text-[13px] font-medium text-[var(--text)] mb-1">Relay</div>
+                      <div className="text-[15px] text-[var(--text)] leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--text)] prose-p:text-[var(--text)] prose-code:bg-[var(--bg-subtle)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[14px] prose-pre:bg-[var(--bg-subtle)] prose-pre:border prose-pre:border-[var(--border)]">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {streamingContent}
+                        </ReactMarkdown>
+                        <span className="inline-block w-2 h-4 bg-[var(--text)] ml-0.5 animate-pulse rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading indicator (no streaming content yet) */}
+              {loading && !streamingContent && activeTools.length === 0 && (
+                <div className="px-4 mb-6">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg flex items-center justify-center">
+                        <Sparkles className="h-3.5 w-3.5 text-[var(--text)]" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-2">
+                      <span className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce [animation-delay:0.3s]" />
                     </div>
                   </div>
                 </div>
@@ -418,23 +595,23 @@ export default function DashboardPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-[#343541]">
+        <div className="p-4">
           <div className="max-w-3xl mx-auto">
             {/* File attachments */}
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {uploadedFiles.map(file => (
-                  <div 
-                    key={file.id} 
-                    className="flex items-center gap-2 px-3 py-2 bg-[#444654] rounded-lg text-sm"
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg text-sm"
                   >
-                    <FileText className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-200 truncate max-w-[200px]">{file.originalName}</span>
-                    <button 
+                    <FileText className="h-4 w-4 text-[var(--text-secondary)]" />
+                    <span className="text-[var(--text)] truncate max-w-[200px]">{file.originalName}</span>
+                    <button
                       onClick={() => removeUploadedFile(file.id)}
-                      className="text-gray-400 hover:text-white"
+                      className="text-[var(--text-tertiary)] hover:text-[var(--text)]"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
@@ -448,13 +625,13 @@ export default function DashboardPage() {
                 className="hidden"
                 onChange={handleFileUpload}
               />
-              
-              <div className="relative flex items-end gap-2 bg-[#40414f] border border-white/10 rounded-xl shadow-lg">
+
+              <div className="relative flex items-end gap-2 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-2xl shadow-sm focus-within:border-[var(--text-tertiary)] focus-within:shadow-md transition-all">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="p-3 text-gray-400 hover:text-white transition-colors"
+                  className="p-3 text-[var(--text-tertiary)] hover:text-[var(--text)] transition-colors"
                 >
                   {isUploading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -473,24 +650,24 @@ export default function DashboardPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Message..."
+                  placeholder="Message Relay..."
                   disabled={loading}
                   rows={1}
-                  className="flex-1 py-3 bg-transparent border-none outline-none text-white placeholder:text-gray-500 resize-none max-h-[200px]"
+                  className="flex-1 py-3 bg-transparent border-none outline-none text-[var(--text)] placeholder:text-[var(--text-tertiary)] resize-none max-h-[200px] text-[15px]"
                 />
 
                 <button
                   type="submit"
                   disabled={(!inputValue.trim() && uploadedFiles.length === 0) || loading}
-                  className="p-3 text-gray-400 hover:text-[#10a37f] disabled:opacity-30 transition-colors"
+                  className="p-2 m-1.5 rounded-xl bg-[var(--text)] text-white disabled:opacity-20 transition-all hover:opacity-80"
                 >
-                  <Send className="h-5 w-5" />
+                  <ArrowUp className="h-4 w-4" />
                 </button>
               </div>
             </form>
-            
-            <p className="text-center text-xs text-gray-500 mt-2">
-              AI can make mistakes. Please verify important information.
+
+            <p className="text-center text-[12px] text-[var(--text-tertiary)] mt-2">
+              Relay can make mistakes. Please verify important information.
             </p>
           </div>
         </div>
