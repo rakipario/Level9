@@ -7,13 +7,6 @@
 
 const OpenAI = require('openai');
 const { query } = require('../utils/db');
-const { getToolDefinitions, executeTool } = require('../tools');
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
-// Import getAllTools for description generation
 const { getToolDefinitions, executeTool, getAllTools } = require('../tools');
 
 class AgentExecutor {
