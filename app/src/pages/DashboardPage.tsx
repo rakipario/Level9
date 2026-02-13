@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, Settings, MessageSquare, Plus, Paperclip,
   Loader2, Menu, Sparkles, Trash2, FileText, X,
-  ArrowUp, Globe, Code, BarChart3, Layout, Eye, Zap, Image as ImageIcon
+  ArrowUp, Globe, BarChart3, Layout, Eye, Zap, Image as ImageIcon
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
-        setConversations(prev => prev.filter(c => c.id !== id));
+        setConversations((prev: Conversation[]) => prev.filter((c: Conversation) => c.id !== id));
         if (currentConversationId === id) startNewChat();
       }
     } catch (error) {
@@ -178,7 +178,7 @@ export default function DashboardPage() {
           alert(`Upload failed for ${file.name}: ${errorData.error || 'Unknown error'}`);
         }
       }
-      setUploadedFiles(prev => [...prev, ...newUploadedFiles]);
+      setUploadedFiles((prev: UploadedFile[]) => [...prev, ...newUploadedFiles]);
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Failed to upload file. Please try again.');
@@ -188,9 +188,7 @@ export default function DashboardPage() {
     }
   };
 
-  const removeUploadedFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-  };
+
 
   const handleSendMessage = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -199,7 +197,7 @@ export default function DashboardPage() {
     let messageContent = inputValue;
     if (uploadedFiles.length > 0) {
       messageContent += '\n\n[Attached files:\n' +
-        uploadedFiles.map(f => `- ${f.originalName} (file ID: ${f.id})`).join('\n') +
+        uploadedFiles.map((f: UploadedFile) => `- ${f.originalName} (file ID: ${f.id})`).join('\n') +
         ']\n\nWhen reading files, use the file_id shown above.';
     }
 
@@ -210,7 +208,7 @@ export default function DashboardPage() {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setInputValue('');
     setUploadedFiles([]);
     setLoading(true);
@@ -277,8 +275,8 @@ export default function DashboardPage() {
                 break;
 
               case 'tool_result':
-                setActiveTools(prev =>
-                  prev.map(t =>
+                setActiveTools((prev: ToolStatus[]) =>
+                  prev.map((t: ToolStatus) =>
                     t.name === event.tool ? { ...t, status: 'done' as const } : t
                   )
                 );
@@ -315,7 +313,7 @@ export default function DashboardPage() {
         content: accumulatedContent || "I'm not sure how to respond to that.",
         createdAt: new Date().toISOString()
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev: Message[]) => [...prev, assistantMessage]);
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -349,9 +347,9 @@ export default function DashboardPage() {
           fetchConversations();
         }
 
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev: Message[]) => [...prev, assistantMessage]);
       } catch (fallbackError) {
-        setMessages(prev => [...prev, {
+        setMessages((prev: Message[]) => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'system',
           content: 'Failed to send message. Please try again.',
@@ -396,7 +394,7 @@ export default function DashboardPage() {
 
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto px-3 space-y-0.5">
-          {conversations.map(conv => (
+          {conversations.map((conv: Conversation) => (
             <div
               key={conv.id}
               onClick={() => loadConversation(conv.id)}
@@ -408,7 +406,7 @@ export default function DashboardPage() {
               <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-50" />
               <span className="truncate flex-1">{conv.title || 'New conversation'}</span>
               <button
-                onClick={(e) => deleteConversation(conv.id, e)}
+                onClick={(e: React.MouseEvent) => deleteConversation(conv.id, e)}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 text-[var(--text-tertiary)] transition-all"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -494,7 +492,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="w-full max-w-3xl mx-auto py-6">
-              {messages.map((msg) => (
+              {messages.map((msg: Message) => (
                 <div
                   key={msg.id}
                   className="px-4 mb-6"
@@ -542,7 +540,7 @@ export default function DashboardPage() {
                   <div className="flex gap-3">
                     <div className="w-7 h-7 flex-shrink-0" />
                     <div className="flex flex-wrap gap-2">
-                      {activeTools.map((tool, i) => {
+                      {activeTools.map((tool: ToolStatus, i: number) => {
                         const display = toolDisplayNames[tool.name] || { label: tool.name, icon: '⚙️' };
                         return (
                           <div
@@ -617,11 +615,11 @@ export default function DashboardPage() {
             {/* File attachments */}
             {uploadedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
-                {uploadedFiles.map(file => (
+                {uploadedFiles.map((file: UploadedFile) => (
                   <div key={file.id} className="flex items-center gap-2 px-2 py-1 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-secondary)]">
                     <Paperclip className="h-3 w-3" />
                     <span className="max-w-[150px] truncate">{file.originalName}</span>
-                    <button onClick={() => setUploadedFiles(prev => prev.filter(f => f.id !== file.id))} className="hover:text-red-500">
+                    <button onClick={() => setUploadedFiles((prev: UploadedFile[]) => prev.filter((f: UploadedFile) => f.id !== file.id))} className="hover:text-red-500">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
