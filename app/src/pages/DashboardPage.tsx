@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LogOut, Settings, MessageSquare, Plus, Send, Paperclip,
+  LogOut, Settings, MessageSquare, Plus, Paperclip,
   Loader2, Menu, Sparkles, Trash2, FileText, X,
-  Search, Code, Globe, Mic, BarChart3, ArrowUp
+  ArrowUp, Globe, Code, BarChart3
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
